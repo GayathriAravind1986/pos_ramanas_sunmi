@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:collection/collection.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/foundation.dart' hide Category;
@@ -30,14 +31,12 @@ import 'package:simple/Reusable/text_styles.dart';
 import 'package:simple/UI/Authentication/login_screen.dart';
 import 'package:simple/UI/Cart/Widget/payment_option.dart';
 import 'package:simple/UI/Home_screen/Helper/order_helper.dart';
-import 'package:simple/UI/Home_screen/Widget/another_imin_printer/imin_abstract.dart';
-import 'package:simple/UI/Home_screen/Widget/another_imin_printer/mock_imin_printer_chrome.dart';
-import 'package:simple/UI/Home_screen/Widget/another_imin_printer/real_device_printer.dart';
 import 'package:simple/UI/Home_screen/Widget/category_card.dart';
 import 'package:simple/UI/IminHelper/printer_helper.dart';
 import 'package:flutter_esc_pos_network/flutter_esc_pos_network.dart';
 import 'package:image/image.dart' as img;
 import 'package:simple/UI/KOT_printer_helper/printer_kot_helper.dart';
+import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
 
 class FoodOrderingScreen extends StatelessWidget {
   final GlobalKey<FoodOrderingScreenViewState>? foodKey;
@@ -78,7 +77,8 @@ class FoodOrderingScreenView extends StatefulWidget {
   FoodOrderingScreenViewState createState() => FoodOrderingScreenViewState();
 }
 
-enum OrderType { line, parcel, ac, hd, swiggy }
+enum OrderType { line, parcel }
+// ac, hd, swiggy }
 
 extension OrderTypeX on OrderType {
   String get apiValue {
@@ -87,12 +87,12 @@ extension OrderTypeX on OrderType {
         return "LINE";
       case OrderType.parcel:
         return "PARCEL";
-      case OrderType.ac:
-        return "AC";
-      case OrderType.hd:
-        return "HD";
-      case OrderType.swiggy:
-        return "SWIGGY";
+      // case OrderType.ac:
+      //   return "AC";
+      // case OrderType.hd:
+      //   return "HD";
+      // case OrderType.swiggy:
+      //   return "SWIGGY";
     }
   }
 
@@ -103,12 +103,12 @@ extension OrderTypeX on OrderType {
         return OrderType.line;
       case "PARCEL":
         return OrderType.parcel;
-      case "AC":
-        return OrderType.ac;
-      case "HD":
-        return OrderType.hd;
-      case "SWIGGY":
-        return OrderType.swiggy;
+      // case "AC":
+      //   return OrderType.ac;
+      // case "HD":
+      //   return OrderType.hd;
+      // case "SWIGGY":
+      //   return OrderType.swiggy;
       default:
         return OrderType.line;
     }
@@ -216,8 +216,8 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
   bool isCartLoaded = false;
   bool isDiscountApplied = false;
   List<Map<String, dynamic>> billingItems = [];
-  late IPrinterService printerService;
-  late IPrinterService printerServiceThermal;
+  late SunmiPrinter sunmiPrinter;
+  bool _isSunmiDevice = false;
   String serialNumber = '';
   String formatInvoiceDate(String? dateStr) {
     DateTime dateTime;
@@ -236,15 +236,6 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
       }
     }
     return DateFormat('dd/MM/yyyy hh:mm a').format(dateTime);
-  }
-
-  Future<void> _ensureIminServiceReady() async {
-    try {
-      // Try to reinitialize the service to ensure it's pointing to IMIN
-      await printerService.init();
-    } catch (e) {
-      debugPrint("Error reinitializing IMIN service: $e");
-    }
   }
 
   Future<void> _showPrinterIpDialog(BuildContext context) async {
@@ -579,58 +570,6 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
     }
   }
 
-  Future<void> _printBillToIminOnly(BuildContext context) async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(
-                color: appPrimaryColor,
-              ),
-              SizedBox(height: 16),
-              Text("Printing to IMIN device...",
-                  style: TextStyle(color: whiteColor)),
-            ],
-          ),
-        ),
-      );
-
-      await Future.delayed(const Duration(milliseconds: 500));
-      await WidgetsBinding.instance.endOfFrame;
-
-      Uint8List? imageBytes = await captureMonochromeReceipt(normalReceiptKey);
-
-      if (imageBytes != null) {
-        await printerService.init();
-        await printerService.printBitmap(imageBytes);
-        await printerService.fullCut();
-
-        Navigator.of(context).pop();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Bill printed successfully to IMIN device!"),
-            backgroundColor: greenColor,
-          ),
-        );
-      } else {
-        throw Exception("Image capture failed: normalReceiptKey returned null");
-      }
-    } catch (e) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("IMIN Print failed: $e"),
-          backgroundColor: redColor,
-        ),
-      );
-    }
-  }
-
   Future<void> printGenerateOrderReceipt() async {
     try {
       showDialog(
@@ -809,12 +748,11 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                             onPressed: () async {
                               WidgetsBinding.instance
                                   .addPostFrameCallback((_) async {
-                                await _ensureIminServiceReady();
-                                await _printBillToIminOnly(context);
+                                await _printBillToSunmi(context);
                               });
                             },
                             icon: const Icon(Icons.print),
-                            label: const Text("Imin"),
+                            label: const Text("Print(Sunmi)"),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: greenColor,
                               foregroundColor: whiteColor,
@@ -1023,12 +961,11 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                             onPressed: () async {
                               WidgetsBinding.instance
                                   .addPostFrameCallback((_) async {
-                                await _ensureIminServiceReady();
-                                await _printBillToIminOnly(context);
+                                await _printBillToSunmi(context);
                               });
                             },
                             icon: const Icon(Icons.print),
-                            label: const Text("Imin"),
+                            label: const Text("Print(Sunmi)"),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: greenColor,
                               foregroundColor: whiteColor,
@@ -1094,15 +1031,15 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
         case 'PARCEL':
           selectedOrderType = OrderType.parcel;
           break;
-        case 'AC':
-          selectedOrderType = OrderType.ac;
-          break;
-        case 'HD':
-          selectedOrderType = OrderType.hd;
-          break;
-        case 'SWIGGY':
-          selectedOrderType = OrderType.swiggy;
-          break;
+        // case 'AC':
+        //   selectedOrderType = OrderType.ac;
+        //   break;
+        // case 'HD':
+        //   selectedOrderType = OrderType.hd;
+        //   break;
+        // case 'SWIGGY':
+        //   selectedOrderType = OrderType.swiggy;
+        //   break;
         default:
           selectedOrderType = OrderType.line;
       }
@@ -1166,19 +1103,98 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
     });
   }
 
+  Future<void> _checkIfSunmiDevice() async {
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+
+      // Check if manufacturer is SUNMI
+      final isSunmi = androidInfo.manufacturer.toUpperCase().contains('SUNMI');
+
+      setState(() => _isSunmiDevice = isSunmi);
+
+      if (isSunmi) {
+        debugPrint('✅ Running on Sunmi device: ${androidInfo.model}');
+      } else {
+        debugPrint(
+          'ℹ️ Not a Sunmi device: ${androidInfo.manufacturer} ${androidInfo.model}',
+        );
+      }
+    } catch (e) {
+      setState(() => _isSunmiDevice = false);
+      debugPrint('❌ Error checking device: $e');
+    }
+  }
+
+  /// Sunmi printer
+  Future<void> _printBillToSunmi(BuildContext context) async {
+    if (!_isSunmiDevice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("This device is not a Sunmi printer device"),
+          backgroundColor: redColor,
+        ),
+      );
+      return;
+    }
+    try {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: appPrimaryColor),
+              SizedBox(height: 16),
+              Text(
+                "Printing to Sunmi device...",
+                style: TextStyle(color: whiteColor),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      await WidgetsBinding.instance.endOfFrame;
+
+      Uint8List? imageBytes = await captureMonochromeReceipt(normalReceiptKey);
+
+      if (imageBytes == null) {
+        throw Exception("Image capture failed: normalReceiptKey returned null");
+      }
+
+      await SunmiPrinter.printImage(imageBytes);
+      await SunmiPrinter.lineWrap(2);
+      await SunmiPrinter.cutPaper();
+
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Bill printed successfully on Sunmi device!"),
+          backgroundColor: greenColor,
+        ),
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Sunmi print failed: $e"),
+          backgroundColor: redColor,
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     //ipController.text = "192.168.1.4";
     if (kIsWeb) {
-      printerService = MockPrinterService();
-      printerServiceThermal = MockPrinterService();
     } else if (Platform.isAndroid) {
-      printerService = RealPrinterService();
-      printerServiceThermal = RealPrinterService();
-    } else {
-      printerService = MockPrinterService();
-      printerServiceThermal = MockPrinterService();
+      _checkIfSunmiDevice();
     }
     if (widget.hasRefreshedOrder == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -3826,93 +3842,93 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                 ),
                                                               ),
                                                             ),
-                                                            Expanded(
-                                                              child: InkWell(
-                                                                onTap: () {},
-                                                                child:
-                                                                    Container(
-                                                                  padding: const EdgeInsets
-                                                                      .symmetric(
-                                                                      vertical:
-                                                                          8),
-                                                                  decoration:
-                                                                      BoxDecoration(
-                                                                    color:
-                                                                        whiteColor,
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                            30),
-                                                                  ),
-                                                                  child: Center(
-                                                                    child: Text(
-                                                                      "AC",
-                                                                      style: MyTextStyle
-                                                                          .f12(
-                                                                        blackColor,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              child: InkWell(
-                                                                onTap: () {},
-                                                                child:
-                                                                    Container(
-                                                                  padding: const EdgeInsets
-                                                                      .symmetric(
-                                                                      vertical:
-                                                                          8),
-                                                                  decoration:
-                                                                      BoxDecoration(
-                                                                    color:
-                                                                        whiteColor,
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                            30),
-                                                                  ),
-                                                                  child: Center(
-                                                                    child: Text(
-                                                                      "HD",
-                                                                      style: MyTextStyle
-                                                                          .f12(
-                                                                        blackColor,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              child: InkWell(
-                                                                onTap: () {},
-                                                                child:
-                                                                    Container(
-                                                                  padding: const EdgeInsets
-                                                                      .symmetric(
-                                                                      vertical:
-                                                                          8),
-                                                                  decoration:
-                                                                      BoxDecoration(
-                                                                    color:
-                                                                        whiteColor,
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                            30),
-                                                                  ),
-                                                                  child: Center(
-                                                                    child: Text(
-                                                                      "SWIGGY",
-                                                                      style: MyTextStyle
-                                                                          .f12(
-                                                                        blackColor,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
+                                                            // Expanded(
+                                                            //   child: InkWell(
+                                                            //     onTap: () {},
+                                                            //     child:
+                                                            //         Container(
+                                                            //       padding: const EdgeInsets
+                                                            //           .symmetric(
+                                                            //           vertical:
+                                                            //               8),
+                                                            //       decoration:
+                                                            //           BoxDecoration(
+                                                            //         color:
+                                                            //             whiteColor,
+                                                            //         borderRadius:
+                                                            //             BorderRadius.circular(
+                                                            //                 30),
+                                                            //       ),
+                                                            //       child: Center(
+                                                            //         child: Text(
+                                                            //           "AC",
+                                                            //           style: MyTextStyle
+                                                            //               .f12(
+                                                            //             blackColor,
+                                                            //           ),
+                                                            //         ),
+                                                            //       ),
+                                                            //     ),
+                                                            //   ),
+                                                            // ),
+                                                            // Expanded(
+                                                            //   child: InkWell(
+                                                            //     onTap: () {},
+                                                            //     child:
+                                                            //         Container(
+                                                            //       padding: const EdgeInsets
+                                                            //           .symmetric(
+                                                            //           vertical:
+                                                            //               8),
+                                                            //       decoration:
+                                                            //           BoxDecoration(
+                                                            //         color:
+                                                            //             whiteColor,
+                                                            //         borderRadius:
+                                                            //             BorderRadius.circular(
+                                                            //                 30),
+                                                            //       ),
+                                                            //       child: Center(
+                                                            //         child: Text(
+                                                            //           "HD",
+                                                            //           style: MyTextStyle
+                                                            //               .f12(
+                                                            //             blackColor,
+                                                            //           ),
+                                                            //         ),
+                                                            //       ),
+                                                            //     ),
+                                                            //   ),
+                                                            // ),
+                                                            // Expanded(
+                                                            //   child: InkWell(
+                                                            //     onTap: () {},
+                                                            //     child:
+                                                            //         Container(
+                                                            //       padding: const EdgeInsets
+                                                            //           .symmetric(
+                                                            //           vertical:
+                                                            //               8),
+                                                            //       decoration:
+                                                            //           BoxDecoration(
+                                                            //         color:
+                                                            //             whiteColor,
+                                                            //         borderRadius:
+                                                            //             BorderRadius.circular(
+                                                            //                 30),
+                                                            //       ),
+                                                            //       child: Center(
+                                                            //         child: Text(
+                                                            //           "SWIGGY",
+                                                            //           style: MyTextStyle
+                                                            //               .f12(
+                                                            //             blackColor,
+                                                            //           ),
+                                                            //         ),
+                                                            //       ),
+                                                            //     ),
+                                                            //   ),
+                                                            // ),
                                                             const SizedBox(
                                                                 width: 16),
                                                             Text(
@@ -4411,204 +4427,204 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                           ),
                                                           const SizedBox(
                                                               width: 2),
-                                                          Expanded(
-                                                            child: InkWell(
-                                                              onTap: () {
-                                                                setState(() {
-                                                                  selectedOrderType =
-                                                                      OrderType
-                                                                          .ac;
-                                                                  if (widget
-                                                                          .isEditingOrder !=
-                                                                      true) {
-                                                                    selectedValue =
-                                                                        null;
-                                                                    selectedValueWaiter =
-                                                                        null;
-                                                                    tableId =
-                                                                        null;
-                                                                    waiterId =
-                                                                        null;
-                                                                  }
-                                                                  isSplitPayment =
-                                                                      false;
-                                                                  context.read<FoodCategoryBloc>().add(AddToBilling(
-                                                                      List.from(
-                                                                          billingItems),
-                                                                      isDiscountApplied,
-                                                                      selectedOrderType));
-                                                                });
-                                                              },
-                                                              child: Container(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                        .symmetric(
-                                                                        vertical:
-                                                                            8),
-                                                                constraints:
-                                                                    const BoxConstraints(
-                                                                        minWidth:
-                                                                            70),
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: selectedOrderType ==
-                                                                          OrderType
-                                                                              .ac
-                                                                      ? appPrimaryColor
-                                                                      : whiteColor,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              30),
-                                                                ),
-                                                                child: Center(
-                                                                  child: Text(
-                                                                    "AC",
-                                                                    style:
-                                                                        MyTextStyle
-                                                                            .f12(
-                                                                      selectedOrderType ==
-                                                                              OrderType.ac
-                                                                          ? whiteColor
-                                                                          : blackColor,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          Expanded(
-                                                            child: InkWell(
-                                                              onTap: () {
-                                                                setState(() {
-                                                                  selectedOrderType =
-                                                                      OrderType
-                                                                          .hd;
-                                                                  if (widget
-                                                                          .isEditingOrder !=
-                                                                      true) {
-                                                                    selectedValue =
-                                                                        null;
-                                                                    selectedValueWaiter =
-                                                                        null;
-                                                                    tableId =
-                                                                        null;
-                                                                    waiterId =
-                                                                        null;
-                                                                  }
-                                                                  isSplitPayment =
-                                                                      false;
-                                                                  context.read<FoodCategoryBloc>().add(AddToBilling(
-                                                                      List.from(
-                                                                          billingItems),
-                                                                      isDiscountApplied,
-                                                                      selectedOrderType));
-                                                                });
-                                                              },
-                                                              child: Container(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                        .symmetric(
-                                                                        vertical:
-                                                                            8),
-                                                                constraints:
-                                                                    const BoxConstraints(
-                                                                        minWidth:
-                                                                            70),
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: selectedOrderType ==
-                                                                          OrderType
-                                                                              .hd
-                                                                      ? appPrimaryColor
-                                                                      : whiteColor,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              30),
-                                                                ),
-                                                                child: Center(
-                                                                  child: Text(
-                                                                    "HD",
-                                                                    style:
-                                                                        MyTextStyle
-                                                                            .f12(
-                                                                      selectedOrderType ==
-                                                                              OrderType.hd
-                                                                          ? whiteColor
-                                                                          : blackColor,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          Expanded(
-                                                            child: InkWell(
-                                                              onTap: () {
-                                                                setState(() {
-                                                                  selectedOrderType =
-                                                                      OrderType
-                                                                          .swiggy;
-                                                                  if (widget
-                                                                          .isEditingOrder !=
-                                                                      true) {
-                                                                    selectedValue =
-                                                                        null;
-                                                                    selectedValueWaiter =
-                                                                        null;
-                                                                    tableId =
-                                                                        null;
-                                                                    waiterId =
-                                                                        null;
-                                                                  }
-                                                                  isSplitPayment =
-                                                                      false;
-                                                                  context.read<FoodCategoryBloc>().add(AddToBilling(
-                                                                      List.from(
-                                                                          billingItems),
-                                                                      isDiscountApplied,
-                                                                      selectedOrderType));
-                                                                });
-                                                              },
-                                                              child: Container(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                        .symmetric(
-                                                                        vertical:
-                                                                            8),
-                                                                constraints:
-                                                                    const BoxConstraints(
-                                                                        minWidth:
-                                                                            70),
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: selectedOrderType ==
-                                                                          OrderType
-                                                                              .swiggy
-                                                                      ? appPrimaryColor
-                                                                      : whiteColor,
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              30),
-                                                                ),
-                                                                child: Center(
-                                                                  child: Text(
-                                                                    "Swiggy",
-                                                                    style:
-                                                                        MyTextStyle
-                                                                            .f12(
-                                                                      selectedOrderType ==
-                                                                              OrderType.swiggy
-                                                                          ? whiteColor
-                                                                          : blackColor,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
+                                                          // Expanded(
+                                                          //   child: InkWell(
+                                                          //     onTap: () {
+                                                          //       setState(() {
+                                                          //         selectedOrderType =
+                                                          //             OrderType
+                                                          //                 .ac;
+                                                          //         if (widget
+                                                          //                 .isEditingOrder !=
+                                                          //             true) {
+                                                          //           selectedValue =
+                                                          //               null;
+                                                          //           selectedValueWaiter =
+                                                          //               null;
+                                                          //           tableId =
+                                                          //               null;
+                                                          //           waiterId =
+                                                          //               null;
+                                                          //         }
+                                                          //         isSplitPayment =
+                                                          //             false;
+                                                          //         context.read<FoodCategoryBloc>().add(AddToBilling(
+                                                          //             List.from(
+                                                          //                 billingItems),
+                                                          //             isDiscountApplied,
+                                                          //             selectedOrderType));
+                                                          //       });
+                                                          //     },
+                                                          //     child: Container(
+                                                          //       padding:
+                                                          //           const EdgeInsets
+                                                          //               .symmetric(
+                                                          //               vertical:
+                                                          //                   8),
+                                                          //       constraints:
+                                                          //           const BoxConstraints(
+                                                          //               minWidth:
+                                                          //                   70),
+                                                          //       decoration:
+                                                          //           BoxDecoration(
+                                                          //         color: selectedOrderType ==
+                                                          //                 OrderType
+                                                          //                     .ac
+                                                          //             ? appPrimaryColor
+                                                          //             : whiteColor,
+                                                          //         borderRadius:
+                                                          //             BorderRadius
+                                                          //                 .circular(
+                                                          //                     30),
+                                                          //       ),
+                                                          //       child: Center(
+                                                          //         child: Text(
+                                                          //           "AC",
+                                                          //           style:
+                                                          //               MyTextStyle
+                                                          //                   .f12(
+                                                          //             selectedOrderType ==
+                                                          //                     OrderType.ac
+                                                          //                 ? whiteColor
+                                                          //                 : blackColor,
+                                                          //           ),
+                                                          //         ),
+                                                          //       ),
+                                                          //     ),
+                                                          //   ),
+                                                          // ),
+                                                          // Expanded(
+                                                          //   child: InkWell(
+                                                          //     onTap: () {
+                                                          //       setState(() {
+                                                          //         selectedOrderType =
+                                                          //             OrderType
+                                                          //                 .hd;
+                                                          //         if (widget
+                                                          //                 .isEditingOrder !=
+                                                          //             true) {
+                                                          //           selectedValue =
+                                                          //               null;
+                                                          //           selectedValueWaiter =
+                                                          //               null;
+                                                          //           tableId =
+                                                          //               null;
+                                                          //           waiterId =
+                                                          //               null;
+                                                          //         }
+                                                          //         isSplitPayment =
+                                                          //             false;
+                                                          //         context.read<FoodCategoryBloc>().add(AddToBilling(
+                                                          //             List.from(
+                                                          //                 billingItems),
+                                                          //             isDiscountApplied,
+                                                          //             selectedOrderType));
+                                                          //       });
+                                                          //     },
+                                                          //     child: Container(
+                                                          //       padding:
+                                                          //           const EdgeInsets
+                                                          //               .symmetric(
+                                                          //               vertical:
+                                                          //                   8),
+                                                          //       constraints:
+                                                          //           const BoxConstraints(
+                                                          //               minWidth:
+                                                          //                   70),
+                                                          //       decoration:
+                                                          //           BoxDecoration(
+                                                          //         color: selectedOrderType ==
+                                                          //                 OrderType
+                                                          //                     .hd
+                                                          //             ? appPrimaryColor
+                                                          //             : whiteColor,
+                                                          //         borderRadius:
+                                                          //             BorderRadius
+                                                          //                 .circular(
+                                                          //                     30),
+                                                          //       ),
+                                                          //       child: Center(
+                                                          //         child: Text(
+                                                          //           "HD",
+                                                          //           style:
+                                                          //               MyTextStyle
+                                                          //                   .f12(
+                                                          //             selectedOrderType ==
+                                                          //                     OrderType.hd
+                                                          //                 ? whiteColor
+                                                          //                 : blackColor,
+                                                          //           ),
+                                                          //         ),
+                                                          //       ),
+                                                          //     ),
+                                                          //   ),
+                                                          // ),
+                                                          // Expanded(
+                                                          //   child: InkWell(
+                                                          //     onTap: () {
+                                                          //       setState(() {
+                                                          //         selectedOrderType =
+                                                          //             OrderType
+                                                          //                 .swiggy;
+                                                          //         if (widget
+                                                          //                 .isEditingOrder !=
+                                                          //             true) {
+                                                          //           selectedValue =
+                                                          //               null;
+                                                          //           selectedValueWaiter =
+                                                          //               null;
+                                                          //           tableId =
+                                                          //               null;
+                                                          //           waiterId =
+                                                          //               null;
+                                                          //         }
+                                                          //         isSplitPayment =
+                                                          //             false;
+                                                          //         context.read<FoodCategoryBloc>().add(AddToBilling(
+                                                          //             List.from(
+                                                          //                 billingItems),
+                                                          //             isDiscountApplied,
+                                                          //             selectedOrderType));
+                                                          //       });
+                                                          //     },
+                                                          //     child: Container(
+                                                          //       padding:
+                                                          //           const EdgeInsets
+                                                          //               .symmetric(
+                                                          //               vertical:
+                                                          //                   8),
+                                                          //       constraints:
+                                                          //           const BoxConstraints(
+                                                          //               minWidth:
+                                                          //                   70),
+                                                          //       decoration:
+                                                          //           BoxDecoration(
+                                                          //         color: selectedOrderType ==
+                                                          //                 OrderType
+                                                          //                     .swiggy
+                                                          //             ? appPrimaryColor
+                                                          //             : whiteColor,
+                                                          //         borderRadius:
+                                                          //             BorderRadius
+                                                          //                 .circular(
+                                                          //                     30),
+                                                          //       ),
+                                                          //       child: Center(
+                                                          //         child: Text(
+                                                          //           "Swiggy",
+                                                          //           style:
+                                                          //               MyTextStyle
+                                                          //                   .f12(
+                                                          //             selectedOrderType ==
+                                                          //                     OrderType.swiggy
+                                                          //                 ? whiteColor
+                                                          //                 : blackColor,
+                                                          //           ),
+                                                          //         ),
+                                                          //       ),
+                                                          //     ),
+                                                          //   ),
+                                                          // ),
                                                           const SizedBox(
                                                               width: 8),
                                                           Text(
@@ -4668,9 +4684,10 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                       ),
                                                       SizedBox(height: 10),
                                                       if (selectedOrderType ==
-                                                              OrderType.line ||
-                                                          selectedOrderType ==
-                                                              OrderType.ac)
+                                                          OrderType.line)
+                                                        // ||
+                                                        // selectedOrderType ==
+                                                        //     OrderType.ac)
                                                         Row(
                                                           children: [
                                                             Expanded(
@@ -4714,9 +4731,10 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                           ],
                                                         ),
                                                       if (selectedOrderType ==
-                                                              OrderType.line ||
-                                                          selectedOrderType ==
-                                                              OrderType.ac)
+                                                          OrderType.line)
+                                                        // ||
+                                                        //   selectedOrderType ==
+                                                        //       OrderType.ac)
                                                         Row(
                                                           children: [
                                                             Expanded(
@@ -6014,22 +6032,27 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                           ? Row(
                                                               children: [
                                                                 selectedOrderType ==
-                                                                            OrderType
-                                                                                .line ||
-                                                                        selectedOrderType ==
-                                                                            OrderType.ac
+                                                                        OrderType
+                                                                            .line
+                                                                    // ||
+                                                                    //               selectedOrderType ==
+                                                                    //                   OrderType.ac
                                                                     ? Expanded(
                                                                         child: orderLoad
                                                                             ? SpinKitCircle(color: appPrimaryColor, size: 30)
                                                                             : ElevatedButton(
                                                                                 onPressed: () {
-                                                                                  if ((selectedValue == null && selectedOrderType == OrderType.line) || (selectedValue == null && selectedOrderType == OrderType.ac)) {
+                                                                                  if ((selectedValue == null && selectedOrderType == OrderType.line)
+                                                                                      //|| (selectedValue == null && selectedOrderType == OrderType.ac)
+                                                                                      ) {
                                                                                     setState(() {
                                                                                       isCompleteOrder = false;
                                                                                     });
                                                                                     showToast("Table number is required for LINE/AC orders", context, color: false);
                                                                                     return;
-                                                                                  } else if ((selectedValueWaiter == null && selectedOrderType == OrderType.line) || (selectedValueWaiter == null && selectedOrderType == OrderType.ac)) {
+                                                                                  } else if ((selectedValueWaiter == null && selectedOrderType == OrderType.line)
+                                                                                      // || (selectedValueWaiter == null && selectedOrderType == OrderType.ac)
+                                                                                      ) {
                                                                                     setState(() {
                                                                                       isCompleteOrder = false;
                                                                                     });
@@ -6048,18 +6071,23 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                                     ];
                                                                                     final orderPayload = buildOrderPayload(
                                                                                       postAddToBillingModel: postAddToBillingModel,
-                                                                                      tableId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac ? tableId : null,
-                                                                                      waiterId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac ? waiterId : null,
+                                                                                      tableId: selectedOrderType == OrderType.line
+                                                                                          //|| selectedOrderType == OrderType.ac
+                                                                                          ? tableId
+                                                                                          : null,
+                                                                                      waiterId: selectedOrderType == OrderType.line
+                                                                                          //  || selectedOrderType == OrderType.ac
+                                                                                          ? waiterId
+                                                                                          : null,
                                                                                       orderStatus: 'WAITLIST',
-                                                                                      orderType: selectedOrderType == OrderType.line
-                                                                                          ? 'LINE'
-                                                                                          : selectedOrderType == OrderType.parcel
-                                                                                              ? 'PARCEL'
-                                                                                              : selectedOrderType == OrderType.ac
-                                                                                                  ? "AC"
-                                                                                                  : selectedOrderType == OrderType.hd
-                                                                                                      ? "HD"
-                                                                                                      : "SWIGGY",
+                                                                                      orderType: selectedOrderType == OrderType.line ? 'LINE' : 'PARCEL',
+                                                                                      // selectedOrderType == OrderType.parcel
+                                                                                      //         ? 'PARCEL'
+                                                                                      // : selectedOrderType == OrderType.ac
+                                                                                      //     ? "AC"
+                                                                                      //     : selectedOrderType == OrderType.hd
+                                                                                      //         ? "HD"
+                                                                                      //         : "SWIGGY",
                                                                                       discountAmount: postAddToBillingModel.totalDiscount!.toStringAsFixed(2),
                                                                                       isDiscountApplied: isDiscountApplied,
                                                                                       tipAmount: tipController.text,
@@ -6071,12 +6099,16 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                                       orderLoad = true;
                                                                                     });
                                                                                     if (widget.isEditingOrder == true && ((postAddToBillingModel.total != widget.existingOrder?.data!.total || haveAddonsChanged()) && widget.existingOrder?.data!.orderStatus == "WAITLIST")) {
-                                                                                      if (((selectedValue == null || selectedValue == 'N/A') && selectedOrderType == OrderType.line) || (selectedValue == null || selectedValue == 'N/A') && selectedOrderType == OrderType.ac) {
+                                                                                      if (((selectedValue == null || selectedValue == 'N/A') && selectedOrderType == OrderType.line) || (selectedValue == null || selectedValue == 'N/A')
+                                                                                          //&& selectedOrderType == OrderType.ac
+                                                                                          ) {
                                                                                         showToast("Table number is required for LINE/AC orders", context, color: false);
                                                                                         setState(() {
                                                                                           orderLoad = false;
                                                                                         });
-                                                                                      } else if (((selectedValueWaiter == null || selectedValueWaiter == 'N/A') && selectedOrderType == OrderType.line) || (selectedValueWaiter == null || selectedValueWaiter == 'N/A') && selectedOrderType == OrderType.ac) {
+                                                                                      } else if (((selectedValueWaiter == null || selectedValueWaiter == 'N/A') && selectedOrderType == OrderType.line) || (selectedValueWaiter == null || selectedValueWaiter == 'N/A')
+                                                                                          //&& selectedOrderType == OrderType.ac
+                                                                                          ) {
                                                                                         showToast("Waiter name is required for LINE/AC orders", context, color: false);
                                                                                         setState(() {
                                                                                           orderLoad = false;
@@ -6120,9 +6152,13 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                           : ElevatedButton(
                                                                               onPressed: () {
                                                                                 /* Full payment */
-                                                                                if ((selectedValue == null && selectedOrderType == OrderType.line) || (selectedValue == null && selectedOrderType == OrderType.ac)) {
+                                                                                if ((selectedValue == null && selectedOrderType == OrderType.line)
+                                                                                    //|| (selectedValue == null && selectedOrderType == OrderType.ac)
+                                                                                    ) {
                                                                                   showToast("Table number is required for LINE/AC orders", context, color: false);
-                                                                                } else if ((selectedValueWaiter == null && selectedOrderType == OrderType.line) || (selectedValueWaiter == null && selectedOrderType == OrderType.ac)) {
+                                                                                } else if ((selectedValueWaiter == null && selectedOrderType == OrderType.line)
+                                                                                    // || (selectedValueWaiter == null && selectedOrderType == OrderType.ac)
+                                                                                    ) {
                                                                                   showToast("Waiter name is required for LINE/AC orders", context, color: false);
                                                                                 } else {
                                                                                   if ((widget.isEditingOrder == false || widget.isEditingOrder == null) || (widget.isEditingOrder == true && widget.existingOrder?.data!.orderStatus == "WAITLIST")) {
@@ -6144,18 +6180,23 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                                       ];
                                                                                       final orderPayload = buildOrderPayload(
                                                                                         postAddToBillingModel: postAddToBillingModel,
-                                                                                        tableId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac ? tableId : null,
-                                                                                        waiterId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac ? waiterId : null,
+                                                                                        tableId: selectedOrderType == OrderType.line
+                                                                                            //  || selectedOrderType == OrderType.ac
+                                                                                            ? tableId
+                                                                                            : null,
+                                                                                        waiterId: selectedOrderType == OrderType.line
+                                                                                            // || selectedOrderType == OrderType.ac
+                                                                                            ? waiterId
+                                                                                            : null,
                                                                                         orderStatus: 'COMPLETED',
-                                                                                        orderType: selectedOrderType == OrderType.line
-                                                                                            ? 'LINE'
-                                                                                            : selectedOrderType == OrderType.parcel
-                                                                                                ? 'PARCEL'
-                                                                                                : selectedOrderType == OrderType.ac
-                                                                                                    ? "AC"
-                                                                                                    : selectedOrderType == OrderType.hd
-                                                                                                        ? "HD"
-                                                                                                        : "SWIGGY",
+                                                                                        orderType: selectedOrderType == OrderType.line ? 'LINE' : 'PARCEL',
+                                                                                        // selectedOrderType == OrderType.parcel
+                                                                                        //         ? 'PARCEL'
+                                                                                        //         : selectedOrderType == OrderType.ac
+                                                                                        //             ? "AC"
+                                                                                        //             : selectedOrderType == OrderType.hd
+                                                                                        //                 ? "HD"
+                                                                                        //                 : "SWIGGY",
                                                                                         discountAmount: postAddToBillingModel.totalDiscount!.toStringAsFixed(2),
                                                                                         isDiscountApplied: isDiscountApplied,
                                                                                         tipAmount: tipController.text,
@@ -6182,18 +6223,23 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                                       debugPrint("payment<0:$payments");
                                                                                       final orderPayload = buildOrderPayload(
                                                                                         postAddToBillingModel: postAddToBillingModel,
-                                                                                        tableId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac ? tableId : null,
-                                                                                        waiterId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac ? waiterId : null,
+                                                                                        tableId: selectedOrderType == OrderType.line
+                                                                                            //|| selectedOrderType == OrderType.ac
+                                                                                            ? tableId
+                                                                                            : null,
+                                                                                        waiterId: selectedOrderType == OrderType.line
+                                                                                            // || selectedOrderType == OrderType.ac
+                                                                                            ? waiterId
+                                                                                            : null,
                                                                                         orderStatus: 'COMPLETED',
-                                                                                        orderType: selectedOrderType == OrderType.line
-                                                                                            ? 'LINE'
-                                                                                            : selectedOrderType == OrderType.parcel
-                                                                                                ? 'PARCEL'
-                                                                                                : selectedOrderType == OrderType.ac
-                                                                                                    ? "AC"
-                                                                                                    : selectedOrderType == OrderType.hd
-                                                                                                        ? "HD"
-                                                                                                        : "SWIGGY",
+                                                                                        orderType: selectedOrderType == OrderType.line ? 'LINE' : 'PARCEL',
+                                                                                        // selectedOrderType == OrderType.parcel
+                                                                                        //         ? 'PARCEL'
+                                                                                        //         : selectedOrderType == OrderType.ac
+                                                                                        //             ? "AC"
+                                                                                        //             : selectedOrderType == OrderType.hd
+                                                                                        //                 ? "HD"
+                                                                                        //                 : "SWIGGY",
                                                                                         discountAmount: postAddToBillingModel.totalDiscount!.toStringAsFixed(2),
                                                                                         isDiscountApplied: isDiscountApplied,
                                                                                         tipAmount: tipController.text,
@@ -6217,18 +6263,23 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                                       );
                                                                                       final orderPayload = buildOrderPayload(
                                                                                         postAddToBillingModel: postAddToBillingModel,
-                                                                                        tableId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac ? tableId : null,
-                                                                                        waiterId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac ? waiterId : null,
+                                                                                        tableId: selectedOrderType == OrderType.line
+                                                                                            // || selectedOrderType == OrderType.ac
+                                                                                            ? tableId
+                                                                                            : null,
+                                                                                        waiterId: selectedOrderType == OrderType.line
+                                                                                            //|| selectedOrderType == OrderType.ac
+                                                                                            ? waiterId
+                                                                                            : null,
                                                                                         orderStatus: 'COMPLETED',
-                                                                                        orderType: selectedOrderType == OrderType.line
-                                                                                            ? 'LINE'
-                                                                                            : selectedOrderType == OrderType.parcel
-                                                                                                ? 'PARCEL'
-                                                                                                : selectedOrderType == OrderType.ac
-                                                                                                    ? "AC"
-                                                                                                    : selectedOrderType == OrderType.hd
-                                                                                                        ? "HD"
-                                                                                                        : "SWIGGY",
+                                                                                        orderType: selectedOrderType == OrderType.line ? 'LINE' : 'PARCEL',
+                                                                                        // selectedOrderType == OrderType.parcel
+                                                                                        //         ? 'PARCEL'
+                                                                                        //         : selectedOrderType == OrderType.ac
+                                                                                        //             ? "AC"
+                                                                                        //             : selectedOrderType == OrderType.hd
+                                                                                        //                 ? "HD"
+                                                                                        //                 : "SWIGGY",
                                                                                         discountAmount: postAddToBillingModel.totalDiscount!.toStringAsFixed(
                                                                                           2,
                                                                                         ),
@@ -6275,18 +6326,23 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                                         debugPrint("payment>=0:$payments");
                                                                                         final orderPayload = buildOrderPayload(
                                                                                           postAddToBillingModel: postAddToBillingModel,
-                                                                                          tableId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac ? tableId : null,
-                                                                                          waiterId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac ? waiterId : null,
+                                                                                          tableId: selectedOrderType == OrderType.line
+                                                                                              //|| selectedOrderType == OrderType.ac
+                                                                                              ? tableId
+                                                                                              : null,
+                                                                                          waiterId: selectedOrderType == OrderType.line
+                                                                                              //  || selectedOrderType == OrderType.ac
+                                                                                              ? waiterId
+                                                                                              : null,
                                                                                           orderStatus: 'COMPLETED',
-                                                                                          orderType: selectedOrderType == OrderType.line
-                                                                                              ? 'LINE'
-                                                                                              : selectedOrderType == OrderType.parcel
-                                                                                                  ? 'PARCEL'
-                                                                                                  : selectedOrderType == OrderType.ac
-                                                                                                      ? "AC"
-                                                                                                      : selectedOrderType == OrderType.hd
-                                                                                                          ? "HD"
-                                                                                                          : "SWIGGY",
+                                                                                          orderType: selectedOrderType == OrderType.line ? 'LINE' : 'PARCEL',
+                                                                                          // selectedOrderType == OrderType.parcel
+                                                                                          //         ? 'PARCEL'
+                                                                                          //         : selectedOrderType == OrderType.ac
+                                                                                          //             ? "AC"
+                                                                                          //             : selectedOrderType == OrderType.hd
+                                                                                          //                 ? "HD"
+                                                                                          //                 : "SWIGGY",
                                                                                           discountAmount: postAddToBillingModel.totalDiscount!.toStringAsFixed(2),
                                                                                           isDiscountApplied: isDiscountApplied,
                                                                                           tipAmount: tipController.text,
@@ -6355,12 +6411,13 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                     if ((selectedValue ==
                                                                                 null &&
                                                                             selectedOrderType ==
-                                                                                OrderType
-                                                                                    .line) ||
-                                                                        (selectedValue ==
-                                                                                null &&
-                                                                            selectedOrderType ==
-                                                                                OrderType.ac)) {
+                                                                                OrderType.line)
+                                                                        // ||
+                                                                        // (selectedValue ==
+                                                                        //         null &&
+                                                                        //     selectedOrderType ==
+                                                                        //         OrderType.ac)
+                                                                        ) {
                                                                       showToast(
                                                                         "Table number is required for LINE/AC orders",
                                                                         context,
@@ -6372,12 +6429,13 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                     if ((selectedValueWaiter ==
                                                                                 null &&
                                                                             selectedOrderType ==
-                                                                                OrderType
-                                                                                    .line) ||
-                                                                        (selectedValueWaiter ==
-                                                                                null &&
-                                                                            selectedOrderType ==
-                                                                                OrderType.ac)) {
+                                                                                OrderType.line)
+                                                                        // ||
+                                                                        // (selectedValueWaiter ==
+                                                                        //         null &&
+                                                                        //     selectedOrderType ==
+                                                                        //         OrderType.ac)
+                                                                        ) {
                                                                       showToast(
                                                                         "Waiter name is required for LINE/AC orders",
                                                                         context,
@@ -6431,12 +6489,16 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                           buildOrderPayload(
                                                                         postAddToBillingModel:
                                                                             postAddToBillingModel,
-                                                                        tableId: selectedOrderType == OrderType.line ||
-                                                                                selectedOrderType == OrderType.ac
+                                                                        tableId: selectedOrderType ==
+                                                                                OrderType.line
+                                                                            // ||
+                                                                            //     selectedOrderType == OrderType.ac
                                                                             ? tableId
                                                                             : null,
-                                                                        waiterId: selectedOrderType == OrderType.line ||
-                                                                                selectedOrderType == OrderType.ac
+                                                                        waiterId: selectedOrderType ==
+                                                                                OrderType.line
+                                                                            // ||
+                                                                            //     selectedOrderType == OrderType.ac
                                                                             ? waiterId
                                                                             : null,
                                                                         orderStatus:
@@ -6444,13 +6506,14 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                         orderType: selectedOrderType ==
                                                                                 OrderType.line
                                                                             ? 'LINE'
-                                                                            : selectedOrderType == OrderType.parcel
-                                                                                ? 'PARCEL'
-                                                                                : selectedOrderType == OrderType.ac
-                                                                                    ? "AC"
-                                                                                    : selectedOrderType == OrderType.hd
-                                                                                        ? "HD"
-                                                                                        : "SWIGGY",
+                                                                            : 'PARCEL',
+                                                                        // selectedOrderType == OrderType.parcel
+                                                                        //     ? 'PARCEL'
+                                                                        //     : selectedOrderType == OrderType.ac
+                                                                        //         ? "AC"
+                                                                        //         : selectedOrderType == OrderType.hd
+                                                                        //             ? "HD"
+                                                                        //             : "SWIGGY",
                                                                         discountAmount: postAddToBillingModel
                                                                             .totalDiscount!
                                                                             .toStringAsFixed(2),
@@ -6509,23 +6572,26 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                             buildOrderPayload(
                                                                           postAddToBillingModel:
                                                                               postAddToBillingModel,
-                                                                          tableId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac
+                                                                          tableId: selectedOrderType == OrderType.line
+                                                                              //|| selectedOrderType == OrderType.ac
                                                                               ? tableId
                                                                               : null,
-                                                                          waiterId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac
+                                                                          waiterId: selectedOrderType == OrderType.line
+                                                                              //|| selectedOrderType == OrderType.ac
                                                                               ? waiterId
                                                                               : null,
                                                                           orderStatus:
                                                                               'COMPLETED',
                                                                           orderType: selectedOrderType == OrderType.line
                                                                               ? 'LINE'
-                                                                              : selectedOrderType == OrderType.parcel
-                                                                                  ? 'PARCEL'
-                                                                                  : selectedOrderType == OrderType.ac
-                                                                                      ? "AC"
-                                                                                      : selectedOrderType == OrderType.hd
-                                                                                          ? "HD"
-                                                                                          : "SWIGGY",
+                                                                              : 'PARCEL',
+                                                                          // selectedOrderType == OrderType.parcel
+                                                                          //     ? 'PARCEL'
+                                                                          //     : selectedOrderType == OrderType.ac
+                                                                          //         ? "AC"
+                                                                          //         : selectedOrderType == OrderType.hd
+                                                                          //             ? "HD"
+                                                                          //             : "SWIGGY",
                                                                           discountAmount: postAddToBillingModel
                                                                               .totalDiscount!
                                                                               .toStringAsFixed(2),
@@ -6565,23 +6631,26 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                             buildOrderPayload(
                                                                           postAddToBillingModel:
                                                                               postAddToBillingModel,
-                                                                          tableId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac
+                                                                          tableId: selectedOrderType == OrderType.line
+                                                                              //|| selectedOrderType == OrderType.ac
                                                                               ? tableId
                                                                               : null,
-                                                                          waiterId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac
+                                                                          waiterId: selectedOrderType == OrderType.line
+                                                                              //|| selectedOrderType == OrderType.ac
                                                                               ? waiterId
                                                                               : null,
                                                                           orderStatus:
                                                                               'COMPLETED',
                                                                           orderType: selectedOrderType == OrderType.line
                                                                               ? 'LINE'
-                                                                              : selectedOrderType == OrderType.parcel
-                                                                                  ? 'PARCEL'
-                                                                                  : selectedOrderType == OrderType.ac
-                                                                                      ? "AC"
-                                                                                      : selectedOrderType == OrderType.hd
-                                                                                          ? "HD"
-                                                                                          : "SWIGGY",
+                                                                              : 'PARCEL',
+                                                                          // selectedOrderType == OrderType.parcel
+                                                                          //     ? 'PARCEL'
+                                                                          //     : selectedOrderType == OrderType.ac
+                                                                          //         ? "AC"
+                                                                          //         : selectedOrderType == OrderType.hd
+                                                                          //             ? "HD"
+                                                                          //             : "SWIGGY",
                                                                           discountAmount: postAddToBillingModel
                                                                               .totalDiscount!
                                                                               .toStringAsFixed(
@@ -6654,23 +6723,26 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                             buildOrderPayload(
                                                                           postAddToBillingModel:
                                                                               postAddToBillingModel,
-                                                                          tableId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac
+                                                                          tableId: selectedOrderType == OrderType.line
+                                                                              //|| selectedOrderType == OrderType.ac
                                                                               ? tableId
                                                                               : null,
-                                                                          waiterId: selectedOrderType == OrderType.line || selectedOrderType == OrderType.ac
+                                                                          waiterId: selectedOrderType == OrderType.line
+                                                                              //|| selectedOrderType == OrderType.ac
                                                                               ? waiterId
                                                                               : null,
                                                                           orderStatus:
                                                                               'COMPLETED',
                                                                           orderType: selectedOrderType == OrderType.line
                                                                               ? 'LINE'
-                                                                              : selectedOrderType == OrderType.parcel
-                                                                                  ? 'PARCEL'
-                                                                                  : selectedOrderType == OrderType.ac
-                                                                                      ? "AC"
-                                                                                      : selectedOrderType == OrderType.hd
-                                                                                          ? "HD"
-                                                                                          : "SWIGGY",
+                                                                              : 'PARCEL',
+                                                                          // selectedOrderType == OrderType.parcel
+                                                                          //     ? 'PARCEL'
+                                                                          //     : selectedOrderType == OrderType.ac
+                                                                          //         ? "AC"
+                                                                          //         : selectedOrderType == OrderType.hd
+                                                                          //             ? "HD"
+                                                                          //             : "SWIGGY",
                                                                           discountAmount: postAddToBillingModel
                                                                               .totalDiscount!
                                                                               .toStringAsFixed(2),

@@ -5,6 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simple/Bloc/Response/errorResponse.dart';
 import 'package:simple/ModelClass/Authentication/Post_login_model.dart';
 import 'package:simple/ModelClass/Cart/Post_Add_to_billing_model.dart';
+import 'package:simple/ModelClass/Expense/getCategoryByLocationModel.dart';
+import 'package:simple/ModelClass/Expense/getDailyExpenseModel.dart';
+import 'package:simple/ModelClass/Expense/getSingleExpenseModel.dart';
+import 'package:simple/ModelClass/Expense/postExpenseModel.dart';
+import 'package:simple/ModelClass/Expense/putExpenseModel.dart';
 import 'package:simple/ModelClass/HomeScreen/Category&Product/Get_category_model.dart';
 import 'package:simple/ModelClass/HomeScreen/Category&Product/Get_product_by_catId_model.dart';
 import 'package:simple/ModelClass/Order/Delete_order_model.dart';
@@ -14,6 +19,7 @@ import 'package:simple/ModelClass/Order/Update_generate_order_model.dart';
 import 'package:simple/ModelClass/Order/get_order_list_today_model.dart';
 import 'package:simple/ModelClass/Products/get_products_cat_model.dart';
 import 'package:simple/ModelClass/Report/Get_report_with_ordertype_model.dart';
+import 'package:simple/ModelClass/ShiftClosing/getShiftClosingModel.dart';
 import 'package:simple/ModelClass/ShopDetails/getStockMaintanencesModel.dart';
 import 'package:simple/ModelClass/StockIn/getLocationModel.dart';
 import 'package:simple/ModelClass/StockIn/getSupplierLocationModel.dart';
@@ -946,6 +952,313 @@ class ApiProvider {
       return SaveStockInModel()..errorResponse = errorResponse;
     } catch (error) {
       return SaveStockInModel()..errorResponse = handleError(error);
+    }
+  }
+
+//***** Expenses *****//
+  /// Category By Location API Integration
+  Future<GetCategoryByLocationModel> getCategoryByLocationAPI(
+      String? locationId) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var token = sharedPreferences.getString("token");
+    debugPrint("token:$token");
+
+    try {
+      var dio = Dio();
+      var response = await dio.request(
+        '${Constants.baseUrl}api/expensescategory?locationId=$locationId',
+        options: Options(
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data['success'] == true) {
+          GetCategoryByLocationModel getCategoryByLocationResponse =
+              GetCategoryByLocationModel.fromJson(response.data);
+          return getCategoryByLocationResponse;
+        }
+      } else {
+        return GetCategoryByLocationModel()
+          ..errorResponse = ErrorResponse(
+            message: "Error: ${response.data['message'] ?? 'Unknown error'}",
+            statusCode: response.statusCode,
+          );
+      }
+      return GetCategoryByLocationModel()
+        ..errorResponse = ErrorResponse(
+          message: "Unexpected error occurred.",
+          statusCode: 500,
+        );
+    } on DioException catch (dioError) {
+      final errorResponse = handleError(dioError);
+      return GetCategoryByLocationModel()..errorResponse = errorResponse;
+    } catch (error) {
+      final errorResponse = handleError(error);
+      return GetCategoryByLocationModel()..errorResponse = errorResponse;
+    }
+  }
+
+  /// save Expenses API Integration
+  Future<PostExpenseModel> postExpenseAPI(
+    String date,
+    String catId,
+    String name,
+    String method,
+    String amount,
+    String locId,
+  ) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var token = sharedPreferences.getString("token");
+    debugPrint("token:$token");
+    try {
+      final dataMap = {
+        "date": date,
+        "CategoryId": catId,
+        "name": name,
+        "amount": int.parse(amount),
+        "paymentMethod": method,
+        "locationId": locId
+      };
+      var data = json.encode(dataMap);
+      var dio = Dio();
+      var response = await dio.request(
+        '${Constants.baseUrl}api/expenses',
+        options: Options(
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+        data: data,
+      );
+      if (response.statusCode == 201 && response.data != null) {
+        try {
+          PostExpenseModel postExpenseResponse =
+              PostExpenseModel.fromJson(response.data);
+          return postExpenseResponse;
+        } catch (e) {
+          return PostExpenseModel()
+            ..errorResponse = ErrorResponse(
+              message: "Failed to parse response: $e",
+            );
+        }
+      } else {
+        return PostExpenseModel()
+          ..errorResponse = ErrorResponse(
+            message: "Error: ${response.data['message'] ?? 'Unknown error'}",
+            statusCode: response.statusCode,
+          );
+      }
+    } on DioException catch (dioError) {
+      final errorResponse = handleError(dioError);
+      return PostExpenseModel()..errorResponse = errorResponse;
+    } catch (error) {
+      return PostExpenseModel()..errorResponse = handleError(error);
+    }
+  }
+
+  /// Single Expense - API Integration
+  Future<GetSingleExpenseModel> getSingleExpenseAPI(String? expenseId) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var token = sharedPreferences.getString("token");
+    debugPrint("token:$token");
+
+    try {
+      var dio = Dio();
+      var response = await dio.request(
+        '${Constants.baseUrl}api/expenses/$expenseId',
+        options: Options(
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data['success'] == true) {
+          GetSingleExpenseModel getSingleExpenseResponse =
+              GetSingleExpenseModel.fromJson(response.data);
+          return getSingleExpenseResponse;
+        }
+      } else {
+        return GetSingleExpenseModel()
+          ..errorResponse = ErrorResponse(
+            message: "Error: ${response.data['message'] ?? 'Unknown error'}",
+            statusCode: response.statusCode,
+          );
+      }
+      return GetSingleExpenseModel()
+        ..errorResponse = ErrorResponse(
+          message: "Unexpected error occurred.",
+          statusCode: 500,
+        );
+    } on DioException catch (dioError) {
+      final errorResponse = handleError(dioError);
+      return GetSingleExpenseModel()..errorResponse = errorResponse;
+    } catch (error) {
+      final errorResponse = handleError(error);
+      return GetSingleExpenseModel()..errorResponse = errorResponse;
+    }
+  }
+
+  /// update Expense  - API Integration
+  Future<PutExpenseModel> putExpenseAPI(
+    String expenseId,
+    String date,
+    String catId,
+    String name,
+    String method,
+    String amount,
+    String locId,
+  ) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var token = sharedPreferences.getString("token");
+    debugPrint("token:$token");
+    try {
+      final dataMap = {
+        "date": date,
+        "CategoryId": catId,
+        "name": name,
+        "amount": int.parse(amount),
+        "paymentMethod": method,
+        "locationId": locId
+      };
+      var data = json.encode(dataMap);
+      var dio = Dio();
+      var response = await dio.request(
+        '${Constants.baseUrl}api/expenses/$expenseId',
+        options: Options(
+          method: 'PUT',
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+        data: data,
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        try {
+          PutExpenseModel putExpenseResponse =
+              PutExpenseModel.fromJson(response.data);
+          return putExpenseResponse;
+        } catch (e) {
+          return PutExpenseModel()
+            ..errorResponse = ErrorResponse(
+              message: "Failed to parse response: $e",
+            );
+        }
+      } else {
+        return PutExpenseModel()
+          ..errorResponse = ErrorResponse(
+            message: "Error: ${response.data['message'] ?? 'Unknown error'}",
+            statusCode: response.statusCode,
+          );
+      }
+    } on DioException catch (dioError) {
+      final errorResponse = handleError(dioError);
+      return PutExpenseModel()..errorResponse = errorResponse;
+    } catch (error) {
+      return PutExpenseModel()..errorResponse = handleError(error);
+    }
+  }
+
+  /// Daily Expense - fetch API Integration
+  Future<GetDailyExpenseModel> getDailyExpenseAPI(
+      String search, String locId, String catId, String payMethod) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var token = sharedPreferences.getString("token");
+    debugPrint("token:$token");
+    debugPrint(
+        "BaseUrl:${Constants.baseUrl}api/expenses?limit=100&offset=0&search=$search&locationId=$locId&CategoryId=$catId&paymentMethod=$payMethod");
+
+    try {
+      var dio = Dio();
+      var response = await dio.request(
+        '${Constants.baseUrl}api/expenses?limit=100&offset=0&search=$search&locationId=$locId&CategoryId=$catId&paymentMethod=$payMethod',
+        options: Options(
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data['success'] == true) {
+          GetDailyExpenseModel getDailyExpenseResponse =
+              GetDailyExpenseModel.fromJson(response.data);
+          return getDailyExpenseResponse;
+        }
+      } else {
+        return GetDailyExpenseModel()
+          ..errorResponse = ErrorResponse(
+            message: "Error: ${response.data['message'] ?? 'Unknown error'}",
+            statusCode: response.statusCode,
+          );
+      }
+      return GetDailyExpenseModel()
+        ..errorResponse = ErrorResponse(
+          message: "Unexpected error occurred.",
+          statusCode: 500,
+        );
+    } on DioException catch (dioError) {
+      final errorResponse = handleError(dioError);
+      return GetDailyExpenseModel()..errorResponse = errorResponse;
+    } catch (error) {
+      final errorResponse = handleError(error);
+      return GetDailyExpenseModel()..errorResponse = errorResponse;
+    }
+  }
+
+  /***** Shift closing *****/
+  /// Shift Closing - API Integration
+  Future<GetShiftClosingModel> getShiftClosingAPI(String? date) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var token = sharedPreferences.getString("token");
+    debugPrint("token:$token");
+    debugPrint(
+        "BaseUrl:${Constants.baseUrl}api/dashboard/dailyclosing?date=$date");
+
+    try {
+      var dio = Dio();
+      var response = await dio.request(
+        '${Constants.baseUrl}api/dashboard/dailyclosing?date=$date',
+        options: Options(
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data['success'] == true) {
+          GetShiftClosingModel getShiftClosingResponse =
+              GetShiftClosingModel.fromJson(response.data);
+          return getShiftClosingResponse;
+        }
+      } else {
+        return GetShiftClosingModel()
+          ..errorResponse = ErrorResponse(
+            message: "Error: ${response.data['message'] ?? 'Unknown error'}",
+            statusCode: response.statusCode,
+          );
+      }
+      return GetShiftClosingModel()
+        ..errorResponse = ErrorResponse(
+          message: "Unexpected error occurred.",
+          statusCode: 500,
+        );
+    } on DioException catch (dioError) {
+      final errorResponse = handleError(dioError);
+      return GetShiftClosingModel()..errorResponse = errorResponse;
+    } catch (error) {
+      final errorResponse = handleError(error);
+      return GetShiftClosingModel()..errorResponse = errorResponse;
     }
   }
 

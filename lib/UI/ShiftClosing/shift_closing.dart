@@ -1,0 +1,453 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simple/Alertbox/snackBarAlert.dart';
+import 'package:simple/Bloc/ShiftClosing/shift_closing_bloc.dart';
+import 'package:simple/ModelClass/ShiftClosing/getShiftClosingModel.dart';
+import 'package:simple/Reusable/color.dart';
+import 'package:simple/Reusable/text_styles.dart';
+import 'package:simple/UI/Authentication/login_screen.dart';
+import 'package:simple/UI/Order/Helper/time_formatter.dart';
+
+class ShiftView extends StatelessWidget {
+  final GlobalKey<ShiftViewViewState>? ShiftKey;
+  bool? hasRefreshedShift;
+  ShiftView({
+    super.key,
+    this.ShiftKey,
+    this.hasRefreshedShift,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ShiftViewView(
+        ShiftKey: ShiftKey, hasRefreshedShift: hasRefreshedShift);
+  }
+}
+
+class ShiftViewView extends StatefulWidget {
+  final GlobalKey<ShiftViewViewState>? ShiftKey;
+  bool? hasRefreshedShift;
+  ShiftViewView({
+    super.key,
+    this.ShiftKey,
+    this.hasRefreshedShift,
+  });
+
+  @override
+  ShiftViewViewState createState() => ShiftViewViewState();
+}
+
+class ShiftViewViewState extends State<ShiftViewView> {
+  GetShiftClosingModel getShiftClosingModel = GetShiftClosingModel();
+  final upiController = TextEditingController();
+  final dateController = TextEditingController();
+  final cardController = TextEditingController();
+  final hdController = TextEditingController();
+  final expectedCashController = TextEditingController();
+  final cashInHandController = TextEditingController();
+
+  bool shiftLoad = false;
+  String? errorMessage;
+
+  void refreshShift() {
+    if (!mounted || !context.mounted) return;
+    final parsed = DateFormat("dd/MM/yyyy").parse(dateController.text);
+    final backendDate = DateFormat("yyyy-MM-dd").format(parsed);
+    context.read<ShiftClosingBloc>().add(ShiftClosing(backendDate));
+    setState(() {
+      shiftLoad = true;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    dateController.text =
+        "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
+    final parsed = DateFormat("dd/MM/yyyy").parse(dateController.text);
+    final backendDate = DateFormat("yyyy-MM-dd").format(parsed);
+    debugPrint("date:$backendDate");
+    if (widget.hasRefreshedShift == true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          shiftLoad = true;
+        });
+        widget.ShiftKey?.currentState?.refreshShift();
+      });
+    } else {
+      context.read<ShiftClosingBloc>().add(ShiftClosing(backendDate));
+      setState(() {
+        shiftLoad = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget mainContainer() {
+      return shiftLoad
+          ? Container(
+              padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).size.height * 0.1),
+              alignment: Alignment.center,
+              child: const SpinKitChasingDots(color: appPrimaryColor, size: 30))
+          : getShiftClosingModel.data == null
+              ? Container(
+                  padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).size.height * 0.1),
+                  alignment: Alignment.center,
+                  child: Text(
+                    "No ShiftClosing Today !!!",
+                    style: MyTextStyle.f16(
+                      greyColor,
+                      weight: FontWeight.w500,
+                    ),
+                  ))
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Shift Closing Report",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: appPrimaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ---------------- DATE FIELD ----------------
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 200,
+                            child: TextFormField(
+                              readOnly: true,
+                              decoration: InputDecoration(
+                                labelText: "Date",
+                                suffixIcon: Icon(Icons.calendar_today),
+                                border: OutlineInputBorder(),
+                              ),
+                              controller: dateController,
+                              onTap: () async {
+                                DateTime? picked = await showDatePicker(
+                                  context: context,
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2100),
+                                  initialDate: DateTime.now(),
+                                  builder: (context, child) {
+                                    return Theme(
+                                      data: Theme.of(context).copyWith(
+                                        colorScheme: ColorScheme.light(
+                                          primary: appPrimaryColor,
+                                          onPrimary: whiteColor,
+                                          onSurface: blackColor,
+                                        ),
+                                        textButtonTheme: TextButtonThemeData(
+                                          style: TextButton.styleFrom(
+                                            foregroundColor:
+                                                appPrimaryColor, // OK & Cancel button text color
+                                          ),
+                                        ),
+                                      ),
+                                      child: child!,
+                                    );
+                                  },
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    // selectedDate =
+                                    //     DateFormat("dd/MM/yyyy").format(picked);
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 25),
+
+                      // ---------------- FIRST ROW ----------------
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          buildAmountBox(
+                            "UPI",
+                            Colors.blue.shade100,
+                            upiController,
+                            getShiftClosingModel.data!.summary!.paymentMethods!
+                                .expectedUpiAmount
+                                .toString(),
+                          ),
+                          buildAmountBox(
+                              "Card",
+                              Colors.green.shade100,
+                              cardController,
+                              getShiftClosingModel.data!.summary!
+                                  .paymentMethods!.expectedCardAmount
+                                  .toString()),
+                          buildAmountBox(
+                              "HD / Credit",
+                              Colors.orange.shade100,
+                              hdController,
+                              getShiftClosingModel
+                                  .data!.summary!.expectedHdAmount
+                                  .toString()),
+                          buildExpectedCash(
+                            getShiftClosingModel
+                                .data!.summary!.paymentMethods!.totalcashAmount
+                                .toString(),
+                            getShiftClosingModel.data!.summary!.paymentMethods!
+                                .expectedCashAmount
+                                .toString(),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 25),
+
+                      // ---------------- SUMMARY BOXES ----------------
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          buildSummary(
+                              "Total Sales",
+                              "₹${getShiftClosingModel.data!.summary!.totalSalesAmount}",
+                              Colors.blue.shade50),
+                          buildSummary(
+                              "Total Expenses",
+                              "₹${getShiftClosingModel.data!.summary!.totalExpensesAmount}",
+                              Colors.orange.shade50),
+                          buildSummary(
+                              "Non-Cash + Expenses",
+                              "₹${getShiftClosingModel.data!.summary!.overallexpensesamt}",
+                              Colors.yellow.shade100),
+                          buildSummary("Cash Difference", "₹0.00",
+                              Colors.green.shade100),
+                        ],
+                      ),
+
+                      const SizedBox(height: 35),
+
+                      // ---------------- BUTTONS ----------------
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: greenColor,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 40, vertical: 15),
+                            ),
+                            onPressed: () {},
+                            child: const Text(
+                              "SAVE CLOSING",
+                              style: TextStyle(color: whiteColor),
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 40, vertical: 15),
+                            ),
+                            onPressed: () {},
+                            child: const Text(
+                              "RESET",
+                              style: TextStyle(color: appPrimaryColor),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+    }
+
+    return BlocBuilder<ShiftClosingBloc, dynamic>(
+      buildWhen: ((previous, current) {
+        if (current is GetShiftClosingModel) {
+          getShiftClosingModel = current;
+          if (getShiftClosingModel.success == true) {
+            setState(() {
+              upiController.text = getShiftClosingModel
+                  .data!.summary!.paymentMethods!.upiAmount
+                  .toString();
+              cardController.text = getShiftClosingModel
+                  .data!.summary!.paymentMethods!.cardAmount
+                  .toString();
+              hdController.text =
+                  getShiftClosingModel.data!.summary!.hdAmount.toString();
+              cashInHandController.text = getShiftClosingModel
+                  .data!.summary!.paymentMethods!.cashAmount
+                  .toString();
+              shiftLoad = false;
+            });
+          }
+          if (getShiftClosingModel.errorResponse?.isUnauthorized == true) {
+            _handle401Error();
+            return true;
+          }
+          return true;
+        }
+        return false;
+      }),
+      builder: (context, dynamic) {
+        return mainContainer();
+      },
+    );
+  }
+
+  Widget buildAmountBox(String title, Color bg,
+      TextEditingController controller, String apiAmount) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              "₹$apiAmount",
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: "₹ 0",
+                border: OutlineInputBorder(),
+              ),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------- Expected Cash Box ----------------
+  Widget buildExpectedCash(
+      String totalCashApiValue, String expectedCashApiValue) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: Colors.green.shade100,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Total Cash",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 5),
+            Text(
+              "₹$totalCashApiValue",
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.indigo,
+              ),
+            ),
+            const SizedBox(height: 5),
+            const Text("Expected Cash",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 5),
+            Text(
+              "₹$expectedCashApiValue",
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.indigo,
+              ),
+            ),
+            const SizedBox(height: 5),
+            const Text("Cash in Hand",
+                style: TextStyle(fontSize: 12, color: Colors.green)),
+            const SizedBox(height: 10),
+            TextField(
+              controller: cashInHandController,
+              decoration: const InputDecoration(
+                hintText: "₹ -222",
+                border: OutlineInputBorder(),
+              ),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------- Summary box ----------------
+  Widget buildSummary(String title, String value, Color bg) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(title,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.indigo),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handle401Error() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    await sharedPreferences.remove("token");
+    await sharedPreferences.clear();
+    showToast("Session expired. Please login again.", context, color: false);
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+      (Route<dynamic> route) => false,
+    );
+  }
+}

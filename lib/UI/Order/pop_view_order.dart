@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,11 +11,9 @@ import 'package:simple/ModelClass/Order/Get_view_order_model.dart';
 import 'package:simple/Reusable/color.dart';
 import 'package:simple/Reusable/space.dart';
 import 'package:simple/Reusable/text_styles.dart';
-import 'package:simple/UI/Home_screen/Widget/another_imin_printer/imin_abstract.dart';
-import 'package:simple/UI/Home_screen/Widget/another_imin_printer/mock_imin_printer_chrome.dart';
-import 'package:simple/UI/Home_screen/Widget/another_imin_printer/real_device_printer.dart';
 import 'package:simple/UI/IminHelper/printer_helper.dart';
 import 'package:simple/UI/KOT_printer_helper/printer_kot_helper.dart';
+import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
 
 class ThermalReceiptDialog extends StatefulWidget {
   final GetViewOrderModel getViewOrderModel;
@@ -26,34 +25,108 @@ class ThermalReceiptDialog extends StatefulWidget {
 }
 
 class _ThermalReceiptDialogState extends State<ThermalReceiptDialog> {
-  late IPrinterService printerService;
+  late SunmiPrinter sunmiPrinter;
   GlobalKey normalReceiptKey = GlobalKey();
   GlobalKey kotReceiptKey = GlobalKey();
 
   List<BluetoothInfo> _devices = [];
   bool _isScanning = false;
-
+  bool _isSunmiDevice = false;
   final TextEditingController ipController = TextEditingController();
   final formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
-    // ipController.text = "192.168.1.123";
     if (kIsWeb) {
-      printerService = MockPrinterService();
+      // Mock service for web
     } else if (Platform.isAndroid) {
-      printerService = RealPrinterService();
-    } else {
-      printerService = MockPrinterService();
+      _checkIfSunmiDevice();
     }
   }
 
-  Future<void> _ensureIminServiceReady() async {
+  Future<void> _checkIfSunmiDevice() async {
     try {
-      await printerService.init();
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+
+      // Check if manufacturer is SUNMI
+      final isSunmi = androidInfo.manufacturer.toUpperCase().contains('SUNMI');
+
+      setState(() => _isSunmiDevice = isSunmi);
+
+      if (isSunmi) {
+        debugPrint('✅ Running on Sunmi device: ${androidInfo.model}');
+      } else {
+        debugPrint(
+          'ℹ️ Not a Sunmi device: ${androidInfo.manufacturer} ${androidInfo.model}',
+        );
+      }
     } catch (e) {
-      debugPrint("Error reinitializing IMIN service: $e");
+      setState(() => _isSunmiDevice = false);
+      debugPrint('❌ Error checking device: $e');
+    }
+  }
+
+  /// Sunmi printer
+  Future<void> _printBillToSunmi(BuildContext context) async {
+    if (!_isSunmiDevice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("This device is not a Sunmi printer device"),
+          backgroundColor: redColor,
+        ),
+      );
+      return;
+    }
+    try {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: appPrimaryColor),
+              SizedBox(height: 16),
+              Text(
+                "Printing to Sunmi device...",
+                style: TextStyle(color: whiteColor),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      await WidgetsBinding.instance.endOfFrame;
+
+      Uint8List? imageBytes = await captureMonochromeReceipt(normalReceiptKey);
+
+      if (imageBytes == null) {
+        throw Exception("Image capture failed: normalReceiptKey returned null");
+      }
+
+      await SunmiPrinter.printImage(imageBytes);
+      await SunmiPrinter.lineWrap(2);
+      await SunmiPrinter.cutPaper();
+
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Bill printed successfully on Sunmi device!"),
+          backgroundColor: greenColor,
+        ),
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Sunmi print failed: $e"),
+          backgroundColor: redColor,
+        ),
+      );
     }
   }
 
@@ -391,58 +464,6 @@ class _ThermalReceiptDialogState extends State<ThermalReceiptDialog> {
     }
   }
 
-  Future<void> _printBillToIminOnly(BuildContext context) async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(
-                color: appPrimaryColor,
-              ),
-              SizedBox(height: 16),
-              Text("Printing to IMIN device...",
-                  style: TextStyle(color: whiteColor)),
-            ],
-          ),
-        ),
-      );
-
-      await Future.delayed(const Duration(milliseconds: 500));
-      await WidgetsBinding.instance.endOfFrame;
-
-      Uint8List? imageBytes = await captureMonochromeReceipt(normalReceiptKey);
-
-      if (imageBytes != null) {
-        await printerService.init();
-        await printerService.printBitmap(imageBytes);
-        await printerService.fullCut();
-
-        Navigator.of(context).pop();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Bill printed successfully to IMIN device!"),
-            backgroundColor: greenColor,
-          ),
-        );
-      } else {
-        throw Exception("Image capture failed: normalReceiptKey returned null");
-      }
-    } catch (e) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("IMIN Print failed: $e"),
-          backgroundColor: redColor,
-        ),
-      );
-    }
-  }
-
   @override
   void dispose() {
     super.dispose();
@@ -641,14 +662,14 @@ class _ThermalReceiptDialogState extends State<ThermalReceiptDialog> {
                         children: [
                           ElevatedButton.icon(
                             onPressed: () async {
-                              WidgetsBinding.instance
-                                  .addPostFrameCallback((_) async {
-                                await _ensureIminServiceReady();
-                                await _printBillToIminOnly(context);
+                              WidgetsBinding.instance.addPostFrameCallback((
+                                _,
+                              ) async {
+                                await _printBillToSunmi(context);
                               });
                             },
                             icon: const Icon(Icons.print),
-                            label: const Text("Imin"),
+                            label: const Text("Print(Sunmi)"),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: greenColor,
                               foregroundColor: whiteColor,

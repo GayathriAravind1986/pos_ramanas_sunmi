@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simple/Alertbox/AlertDialogBox.dart';
 import 'package:simple/Bloc/Category/category_bloc.dart';
+import 'package:simple/Bloc/Expense/expense_bloc.dart';
 import 'package:simple/Bloc/Report/report_bloc.dart';
 import 'package:simple/Bloc/StockIn/stock_in_bloc.dart';
 import 'package:simple/Bloc/demo/demo_bloc.dart';
 import 'package:simple/Bloc/Products/product_category_bloc.dart';
 import 'package:simple/ModelClass/Order/Get_view_order_model.dart';
 import 'package:simple/UI/CustomAppBar/custom_appbar.dart';
+import 'package:simple/UI/Expenses/expense_page.dart';
 import 'package:simple/UI/Home_screen/home_screen.dart';
 import 'package:simple/UI/Order/order_list.dart';
 import 'package:simple/UI/Order/order_tab_page.dart';
 import 'package:simple/UI/Products/product_Category.dart';
+import 'package:simple/UI/ShiftClosing/shift_closing.dart';
 import 'package:simple/UI/StockIn/stock_in.dart';
 import '../Report/report_order.dart';
 
@@ -64,12 +67,18 @@ class _DashBoardState extends State<DashBoard> {
       GlobalKey<OrderTabViewViewState>();
   final GlobalKey<ProductViewViewState> productKey =
       GlobalKey<ProductViewViewState>();
+  final GlobalKey<ExpenseViewViewState> expenseKey =
+      GlobalKey<ExpenseViewViewState>();
+  final GlobalKey<ShiftViewViewState> shiftKey =
+      GlobalKey<ShiftViewViewState>();
   int selectedIndex = 0;
   bool orderLoad = false;
   bool hasRefreshedOrder = false;
   bool hasRefreshedReport = false;
   bool hasRefreshedStock = false;
   bool hasRefreshedProduct = false;
+  bool hasRefreshedExpense = false;
+  bool hasRefreshedShift = false;
 
   @override
   void initState() {
@@ -131,6 +140,24 @@ class _DashBoardState extends State<DashBoard> {
     }
   }
 
+  void _refreshExpense() {
+    final expenseKeyState = expenseKey.currentState;
+    if (expenseKeyState != null) {
+      expenseKeyState.refreshExpense();
+    } else {
+      debugPrint("reportKeyState is NULL — check if key is assigned properly");
+    }
+  }
+
+  void _refreshShift() {
+    final shiftKeyState = shiftKey.currentState;
+    if (shiftKeyState != null) {
+      shiftKeyState.refreshShift();
+    } else {
+      debugPrint("reportKeyState is NULL — check if key is assigned properly");
+    }
+  }
+
   Widget mainContainer() {
     return SafeArea(
       child: Scaffold(
@@ -146,6 +173,8 @@ class _DashBoardState extends State<DashBoard> {
               hasRefreshedReport = false;
               hasRefreshedStock = false;
               hasRefreshedProduct = false;
+              hasRefreshedExpense = false;
+              hasRefreshedShift = false;
               WidgetsBinding.instance
                   .addPostFrameCallback((_) => _refreshHome());
             }
@@ -154,6 +183,8 @@ class _DashBoardState extends State<DashBoard> {
               hasRefreshedReport = false;
               hasRefreshedStock = false;
               hasRefreshedProduct = false;
+              hasRefreshedExpense = false;
+              hasRefreshedShift = false;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _refreshOrders();
                 _resetOrderTab();
@@ -164,6 +195,8 @@ class _DashBoardState extends State<DashBoard> {
               hasRefreshedReport = true;
               hasRefreshedStock = false;
               hasRefreshedProduct = false;
+              hasRefreshedExpense = false;
+              hasRefreshedShift = false;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _refreshReport();
               });
@@ -173,6 +206,8 @@ class _DashBoardState extends State<DashBoard> {
               hasRefreshedReport = false;
               hasRefreshedStock = true;
               hasRefreshedProduct = false;
+              hasRefreshedExpense = false;
+              hasRefreshedShift = false;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _refreshStock();
               });
@@ -181,9 +216,33 @@ class _DashBoardState extends State<DashBoard> {
               hasRefreshedOrder = false;
               hasRefreshedReport = false;
               hasRefreshedStock = false;
+              hasRefreshedExpense = false;
               hasRefreshedProduct = true;
+              hasRefreshedShift = false;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _refreshProduct();
+              });
+            }
+            if (index == 5 && !hasRefreshedExpense) {
+              hasRefreshedOrder = false;
+              hasRefreshedReport = false;
+              hasRefreshedStock = false;
+              hasRefreshedProduct = false;
+              hasRefreshedExpense = true;
+              hasRefreshedShift = false;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _refreshExpense();
+              });
+            }
+            if (index == 6 && !hasRefreshedShift) {
+              hasRefreshedOrder = false;
+              hasRefreshedReport = false;
+              hasRefreshedStock = false;
+              hasRefreshedProduct = false;
+              hasRefreshedExpense = false;
+              hasRefreshedShift = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _refreshShift();
               });
             }
           },
@@ -259,6 +318,34 @@ class _DashBoardState extends State<DashBoard> {
                       hasRefreshedProduct: hasRefreshedProduct,
                     ),
                   ),
+            hasRefreshedExpense == true
+                ? BlocProvider(
+                    create: (_) => ExpenseBloc(),
+                    child: ExpenseViewView(
+                      key: expenseKey,
+                      hasRefreshedExpense: hasRefreshedExpense,
+                    ))
+                : BlocProvider(
+                    create: (_) => ExpenseBloc(),
+                    child: ExpenseView(
+                      key: expenseKey,
+                      hasRefreshedExpense: hasRefreshedExpense,
+                    ),
+                  ),
+            // hasRefreshedShift == true
+            //     ? BlocProvider(
+            //     create: (_) => ShiftClosingBloc(),
+            //     child: ShiftViewView(
+            //       key: shiftKey,
+            //       hasRefreshedShift: hasRefreshedShift,
+            //     ))
+            //     : BlocProvider(
+            //   create: (_) => ShiftClosingBloc(),
+            //   child: ShiftView(
+            //     key: shiftKey,
+            //     hasRefreshedShift: hasRefreshedShift,
+            //   ),
+            // ),
           ],
         ),
       ),

@@ -5,9 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:simple/ModelClass/Products/get_products_cat_model.dart';
 import 'package:simple/Reusable/color.dart';
 import 'package:simple/Reusable/space.dart';
-import 'package:simple/UI/Home_screen/Widget/another_imin_printer/imin_abstract.dart';
-import 'package:simple/UI/Home_screen/Widget/another_imin_printer/mock_imin_printer_chrome.dart';
-import 'package:simple/UI/Home_screen/Widget/another_imin_printer/real_device_printer.dart';
 import 'package:simple/UI/IminHelper/product_helper.dart';
 
 class ThermalProductsReceiptDialog extends StatefulWidget {
@@ -24,19 +21,18 @@ class ThermalProductsReceiptDialog extends StatefulWidget {
 
 class _ThermalProductsReceiptDialogState
     extends State<ThermalProductsReceiptDialog> {
-  late IPrinterService printerService;
   final GlobalKey productKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    if (kIsWeb) {
-      printerService = MockPrinterService();
-    } else if (Platform.isAndroid) {
-      printerService = RealPrinterService();
-    } else {
-      printerService = MockPrinterService();
-    }
+    // if (kIsWeb) {
+    //   printerService = MockPrinterService();
+    // } else if (Platform.isAndroid) {
+    //   printerService = RealPrinterService();
+    // } else {
+    //   printerService = MockPrinterService();
+    // }
   }
 
   @override
@@ -144,11 +140,11 @@ class _ThermalProductsReceiptDialogState
                             await captureMonochromeProducts(productKey);
 
                         if (imageBytes != null) {
-                          await printerService.init();
-                          await printerService.printBitmap(imageBytes);
+                          // await printerService.init();
+                          // await printerService.printBitmap(imageBytes);
                           // await Future.delayed(
                           //     const Duration(seconds: 2));
-                          await printerService.fullCut();
+                          //await printerService.fullCut();
                           Navigator.pop(context);
                         }
                       } catch (e) {
