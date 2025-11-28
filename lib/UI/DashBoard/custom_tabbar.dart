@@ -4,6 +4,7 @@ import 'package:simple/Alertbox/AlertDialogBox.dart';
 import 'package:simple/Bloc/Category/category_bloc.dart';
 import 'package:simple/Bloc/Expense/expense_bloc.dart';
 import 'package:simple/Bloc/Report/report_bloc.dart';
+import 'package:simple/Bloc/ShiftClosing/shift_closing_bloc.dart';
 import 'package:simple/Bloc/StockIn/stock_in_bloc.dart';
 import 'package:simple/Bloc/demo/demo_bloc.dart';
 import 'package:simple/Bloc/Products/product_category_bloc.dart';
@@ -332,20 +333,20 @@ class _DashBoardState extends State<DashBoard> {
                       hasRefreshedExpense: hasRefreshedExpense,
                     ),
                   ),
-            // hasRefreshedShift == true
-            //     ? BlocProvider(
-            //     create: (_) => ShiftClosingBloc(),
-            //     child: ShiftViewView(
-            //       key: shiftKey,
-            //       hasRefreshedShift: hasRefreshedShift,
-            //     ))
-            //     : BlocProvider(
-            //   create: (_) => ShiftClosingBloc(),
-            //   child: ShiftView(
-            //     key: shiftKey,
-            //     hasRefreshedShift: hasRefreshedShift,
-            //   ),
-            // ),
+            hasRefreshedShift == true
+                ? BlocProvider(
+                    create: (_) => ShiftClosingBloc(),
+                    child: ShiftViewView(
+                      key: shiftKey,
+                      hasRefreshedShift: hasRefreshedShift,
+                    ))
+                : BlocProvider(
+                    create: (_) => ShiftClosingBloc(),
+                    child: ShiftView(
+                      key: shiftKey,
+                      hasRefreshedShift: hasRefreshedShift,
+                    ),
+                  ),
           ],
         ),
       ),

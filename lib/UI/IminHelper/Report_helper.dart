@@ -70,6 +70,7 @@ Widget getReportReceiptWidget({
                   address,
                   style: const TextStyle(
                     fontSize: 16,
+                    fontWeight: FontWeight.bold,
                     color: blackColor,
                   ),
                   textAlign: TextAlign.center,
@@ -79,6 +80,7 @@ Widget getReportReceiptWidget({
                   style: const TextStyle(
                     fontSize: 16,
                     color: blackColor,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -198,7 +200,7 @@ Widget getReportReceiptWidget({
                     child: Text(
                       "Line Total",
                       style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                   ),
                   Expanded(
@@ -207,7 +209,7 @@ Widget getReportReceiptWidget({
                       "$lineQty",
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
+                          fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                   ),
                   Expanded(
@@ -719,14 +721,16 @@ Widget _buildThermalItemRow(int sno, String name, int qty, double amount) {
           child: Text(
             '$sno',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, color: blackColor),
+            style: const TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: blackColor),
           ),
         ),
         Expanded(
           flex: 4,
           child: Text(
             name,
-            style: const TextStyle(fontSize: 16, color: blackColor),
+            style: const TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: blackColor),
           ),
         ),
         Expanded(
@@ -734,7 +738,8 @@ Widget _buildThermalItemRow(int sno, String name, int qty, double amount) {
           child: Text(
             '$qty',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, color: blackColor),
+            style: const TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: blackColor),
           ),
         ),
         Expanded(
@@ -742,7 +747,8 @@ Widget _buildThermalItemRow(int sno, String name, int qty, double amount) {
           child: Text(
             '₹${amount.toStringAsFixed(2)}',
             textAlign: TextAlign.end,
-            style: const TextStyle(fontSize: 16, color: blackColor),
+            style: const TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: blackColor),
           ),
         ),
       ],
@@ -760,14 +766,14 @@ Widget _buildThermalLabelRow(String label, String value) {
           label,
           style: const TextStyle(
             fontWeight: FontWeight.w500,
-            fontSize: 16,
+            fontSize: 18,
             color: blackColor,
           ),
         ),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: blackColor,
           ),

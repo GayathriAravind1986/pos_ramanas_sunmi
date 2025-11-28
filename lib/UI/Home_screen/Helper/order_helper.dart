@@ -21,7 +21,9 @@ Map<String, dynamic> buildOrderPayload({
         "product": item.id,
         "quantity": item.qty,
         "subtotal": item.subtotal,
-        "unitPrice": item.basePrice,
+        "unitPrice": (item.qty != null && item.qty != 0)
+            ? ((item.total ?? 0) / item.qty!).toDouble()
+            : 0.0,
         "addons": item.selectedAddons?.map((addon) {
               return {
                 "addon": addon.id,

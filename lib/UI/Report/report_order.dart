@@ -222,6 +222,7 @@ class ReportViewViewState extends State<ReportViewView> {
 
   @override
   Widget build(BuildContext context) {
+    var size = MediaQuery.of(context).size;
     Widget mainContainer() {
       return Padding(
         padding: const EdgeInsets.all(16),
@@ -352,188 +353,186 @@ class ReportViewViewState extends State<ReportViewView> {
               SizedBox(height: 20),
               Row(
                 children: [
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 6),
-                      child: DropdownButtonFormField<String>(
-                        value: (getTableModel.data?.any(
-                                    (item) => item.name == selectedValue) ??
-                                false)
-                            ? selectedValue
-                            : null,
-                        icon: const Icon(
-                          Icons.arrow_drop_down,
-                          color: appPrimaryColor,
-                        ),
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: appPrimaryColor,
-                            ),
-                          ),
-                        ),
-                        items: getTableModel.data?.map((item) {
-                          return DropdownMenuItem<String>(
-                            value: item.name,
-                            child: Text(
-                              "Table ${item.name}",
-                              style: MyTextStyle.f14(
-                                blackColor,
-                                weight: FontWeight.normal,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              selectedValue = newValue;
-                              final selectedItem = getTableModel.data
-                                  ?.firstWhere((item) => item.name == newValue);
-                              tableId = selectedItem?.id.toString();
-                              context.read<ReportTodayBloc>().add(
-                                    ReportTodayList(
-                                        todayApiDate,
-                                        todayApiDate,
-                                        tableId ?? "",
-                                        waiterId ?? "",
-                                        userId ?? ""),
-                                  );
-                            });
-                          }
-                        },
-                        hint: Text(
-                          '-- Select Table --',
-                          style: MyTextStyle.f14(
-                            blackColor,
-                            weight: FontWeight.normal,
+                  // Expanded(
+                  //   child: Container(
+                  //     margin: const EdgeInsets.only(right: 6),
+                  //     child: DropdownButtonFormField<String>(
+                  //       value: (getTableModel.data?.any(
+                  //                   (item) => item.name == selectedValue) ??
+                  //               false)
+                  //           ? selectedValue
+                  //           : null,
+                  //       icon: const Icon(
+                  //         Icons.arrow_drop_down,
+                  //         color: appPrimaryColor,
+                  //       ),
+                  //       isExpanded: true,
+                  //       decoration: InputDecoration(
+                  //         border: OutlineInputBorder(
+                  //           borderRadius: BorderRadius.circular(8),
+                  //           borderSide: const BorderSide(
+                  //             color: appPrimaryColor,
+                  //           ),
+                  //         ),
+                  //       ),
+                  //       items: getTableModel.data?.map((item) {
+                  //         return DropdownMenuItem<String>(
+                  //           value: item.name,
+                  //           child: Text(
+                  //             "Table ${item.name}",
+                  //             style: MyTextStyle.f14(
+                  //               blackColor,
+                  //               weight: FontWeight.normal,
+                  //             ),
+                  //           ),
+                  //         );
+                  //       }).toList(),
+                  //       onChanged: (String? newValue) {
+                  //         if (newValue != null) {
+                  //           setState(() {
+                  //             selectedValue = newValue;
+                  //             final selectedItem = getTableModel.data
+                  //                 ?.firstWhere((item) => item.name == newValue);
+                  //             tableId = selectedItem?.id.toString();
+                  //             context.read<ReportTodayBloc>().add(
+                  //                   ReportTodayList(
+                  //                       todayApiDate,
+                  //                       todayApiDate,
+                  //                       tableId ?? "",
+                  //                       waiterId ?? "",
+                  //                       userId ?? ""),
+                  //                 );
+                  //           });
+                  //         }
+                  //       },
+                  //       hint: Text(
+                  //         '-- Select Table --',
+                  //         style: MyTextStyle.f14(
+                  //           blackColor,
+                  //           weight: FontWeight.normal,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                  // Expanded(
+                  //   child: Container(
+                  //     margin: const EdgeInsets.only(left: 8),
+                  //     child: DropdownButtonFormField<String>(
+                  //       value: (getWaiterModel.data?.any((item) =>
+                  //                   item.name == selectedValueWaiter) ??
+                  //               false)
+                  //           ? selectedValueWaiter
+                  //           : null,
+                  //       icon: const Icon(
+                  //         Icons.arrow_drop_down,
+                  //         color: appPrimaryColor,
+                  //       ),
+                  //       isExpanded: true,
+                  //       decoration: InputDecoration(
+                  //         border: OutlineInputBorder(
+                  //           borderRadius: BorderRadius.circular(8),
+                  //           borderSide: const BorderSide(
+                  //             color: appPrimaryColor,
+                  //           ),
+                  //         ),
+                  //       ),
+                  //       items: getWaiterModel.data?.map((item) {
+                  //         return DropdownMenuItem<String>(
+                  //           value: item.name,
+                  //           child: Text(
+                  //             "${item.name}",
+                  //             style: MyTextStyle.f14(
+                  //               blackColor,
+                  //               weight: FontWeight.normal,
+                  //             ),
+                  //           ),
+                  //         );
+                  //       }).toList(),
+                  //       onChanged: (String? newValue) {
+                  //         if (newValue != null) {
+                  //           setState(() {
+                  //             selectedValueWaiter = newValue;
+                  //             final selectedItem = getWaiterModel.data
+                  //                 ?.firstWhere((item) => item.name == newValue);
+                  //             waiterId = selectedItem?.id.toString();
+                  //             context.read<ReportTodayBloc>().add(
+                  //                   ReportTodayList(
+                  //                       todayApiDate,
+                  //                       todayApiDate,
+                  //                       tableId ?? "",
+                  //                       waiterId ?? "",
+                  //                       userId ?? ""),
+                  //                 );
+                  //           });
+                  //         }
+                  //       },
+                  //       hint: Text(
+                  //         '-- Select Waiter --',
+                  //         style: MyTextStyle.f14(
+                  //           blackColor,
+                  //           weight: FontWeight.normal,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                  SizedBox(
+                    width: size.width * 0.3,
+                    child: DropdownButtonFormField<String>(
+                      value: (getUserModel.data?.any(
+                                  (item) => item.name == selectedValueUser) ??
+                              false)
+                          ? selectedValueUser
+                          : null,
+                      icon: const Icon(
+                        Icons.arrow_drop_down,
+                        color: appPrimaryColor,
+                      ),
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: appPrimaryColor,
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      child: DropdownButtonFormField<String>(
-                        value: (getWaiterModel.data?.any((item) =>
-                                    item.name == selectedValueWaiter) ??
-                                false)
-                            ? selectedValueWaiter
-                            : null,
-                        icon: const Icon(
-                          Icons.arrow_drop_down,
-                          color: appPrimaryColor,
-                        ),
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: appPrimaryColor,
+                      items: getUserModel.data?.map((item) {
+                        return DropdownMenuItem<String>(
+                          value: item.name,
+                          child: Text(
+                            "${item.name}",
+                            style: MyTextStyle.f14(
+                              blackColor,
+                              weight: FontWeight.normal,
                             ),
                           ),
-                        ),
-                        items: getWaiterModel.data?.map((item) {
-                          return DropdownMenuItem<String>(
-                            value: item.name,
-                            child: Text(
-                              "${item.name}",
-                              style: MyTextStyle.f14(
-                                blackColor,
-                                weight: FontWeight.normal,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              selectedValueWaiter = newValue;
-                              final selectedItem = getWaiterModel.data
-                                  ?.firstWhere((item) => item.name == newValue);
-                              waiterId = selectedItem?.id.toString();
-                              context.read<ReportTodayBloc>().add(
-                                    ReportTodayList(
-                                        todayApiDate,
-                                        todayApiDate,
-                                        tableId ?? "",
-                                        waiterId ?? "",
-                                        userId ?? ""),
-                                  );
-                            });
-                          }
-                        },
-                        hint: Text(
-                          '-- Select Waiter --',
-                          style: MyTextStyle.f14(
-                            blackColor,
-                            weight: FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.all(10),
-                      child: DropdownButtonFormField<String>(
-                        value: (getUserModel.data?.any(
-                                    (item) => item.name == selectedValueUser) ??
-                                false)
-                            ? selectedValueUser
-                            : null,
-                        icon: const Icon(
-                          Icons.arrow_drop_down,
-                          color: appPrimaryColor,
-                        ),
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: appPrimaryColor,
-                            ),
-                          ),
-                        ),
-                        items: getUserModel.data?.map((item) {
-                          return DropdownMenuItem<String>(
-                            value: item.name,
-                            child: Text(
-                              "${item.name}",
-                              style: MyTextStyle.f14(
-                                blackColor,
-                                weight: FontWeight.normal,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              selectedValueUser = newValue;
-                              final selectedItem = getUserModel.data
-                                  ?.firstWhere((item) => item.name == newValue);
-                              userId = selectedItem?.id.toString();
-                            });
-                            context.read<ReportTodayBloc>().add(
-                                  ReportTodayList(
-                                      todayApiDate,
-                                      todayApiDate,
-                                      tableId ?? "",
-                                      waiterId ?? "",
-                                      userId ?? ""),
-                                );
-                          }
-                        },
-                        hint: Text(
-                          '-- Select Operator --',
-                          style: MyTextStyle.f14(
-                            blackColor,
-                            weight: FontWeight.normal,
-                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            selectedValueUser = newValue;
+                            final selectedItem = getUserModel.data
+                                ?.firstWhere((item) => item.name == newValue);
+                            userId = selectedItem?.id.toString();
+                          });
+                          context.read<ReportTodayBloc>().add(
+                                ReportTodayList(
+                                    todayApiDate,
+                                    todayApiDate,
+                                    tableId ?? "",
+                                    waiterId ?? "",
+                                    userId ?? ""),
+                              );
+                        }
+                      },
+                      hint: Text(
+                        '-- Select Operator --',
+                        style: MyTextStyle.f14(
+                          blackColor,
+                          weight: FontWeight.normal,
                         ),
                       ),
                     ),

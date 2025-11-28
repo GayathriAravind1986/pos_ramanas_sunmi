@@ -49,6 +49,7 @@ Widget getThermalReceiptWidget({
                   address,
                   style: const TextStyle(
                     fontSize: 16,
+                    fontWeight: FontWeight.bold,
                     color: blackColor,
                   ),
                   textAlign: TextAlign.center,
@@ -66,6 +67,7 @@ Widget getThermalReceiptWidget({
                   style: const TextStyle(
                     fontSize: 16, // Increased from 12
                     color: blackColor,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -85,12 +87,12 @@ Widget getThermalReceiptWidget({
           _buildThermalLabelRow("Date: ", date),
           _buildThermalLabelRow("Type: ", orderType),
           _buildThermalLabelRow("Status: ", status),
-          if (orderType == 'LINE' || orderType == 'AC')
-            _buildThermalLabelRow("Table: ",
-                orderType == 'LINE' || orderType == 'AC' ? tableName : "N/A"),
-          if (orderType == 'LINE' || orderType == 'AC')
-            _buildThermalLabelRow("Waiter: ",
-                orderType == 'LINE' || orderType == 'AC' ? waiterName : "N/A"),
+          // if (orderType == 'LINE' || orderType == 'AC')
+          //   _buildThermalLabelRow("Table: ",
+          //       orderType == 'LINE' || orderType == 'AC' ? tableName : "N/A"),
+          // if (orderType == 'LINE' || orderType == 'AC')
+          //   _buildThermalLabelRow("Waiter: ",
+          //       orderType == 'LINE' || orderType == 'AC' ? waiterName : "N/A"),
           Container(
             height: 4,
             color: blackColor,
@@ -129,17 +131,17 @@ Widget getThermalReceiptWidget({
           ),
 
           // Totals
-          _buildThermalTotalRow("Subtotal", subtotal),
-          const SizedBox(height: 5),
-          ...finalTax.map((item) => Column(
-                children: [
-                  _buildThermalTotalRow(
-                    item['name'] ?? '',
-                    double.tryParse(item['amt'].toString()) ?? 0.0,
-                  ),
-                  const SizedBox(height: 5),
-                ],
-              )),
+          //_buildThermalTotalRow("Subtotal", subtotal),
+          // const SizedBox(height: 5),
+          // ...finalTax.map((item) => Column(
+          //       children: [
+          //         _buildThermalTotalRow(
+          //           item['name'] ?? '',
+          //           double.tryParse(item['amt'].toString()) ?? 0.0,
+          //         ),
+          //         const SizedBox(height: 5),
+          //       ],
+          //     )),
           //   _buildThermalTotalRow("Tax", tax),
           _buildThermalTotalRow("TOTAL", total, isBold: true),
 
@@ -155,6 +157,7 @@ Widget getThermalReceiptWidget({
             style: const TextStyle(
               fontSize: 16, // Increased from 12
               color: blackColor,
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
@@ -207,7 +210,7 @@ Widget _buildThermalLabelRow(String label, String value) {
         Text(
           label,
           style: TextStyle(
-            fontWeight: isOrderRow ? FontWeight.bold : FontWeight.w500,
+            fontWeight: isOrderRow ? FontWeight.bold : FontWeight.w600,
             fontSize: isOrderRow ? 18 : 16,
             color: blackColor,
           ),
@@ -215,7 +218,7 @@ Widget _buildThermalLabelRow(String label, String value) {
         Text(
           value,
           style: TextStyle(
-            fontWeight: isOrderRow ? FontWeight.bold : FontWeight.normal,
+            fontWeight: isOrderRow ? FontWeight.bold : FontWeight.bold,
             fontSize: isOrderRow ? 18 : 16,
             color: blackColor,
           ),
@@ -288,7 +291,7 @@ Widget _buildThermalItemRow(String name, int qty, double price, double total) {
           child: Text(
             name,
             style: const TextStyle(
-                fontSize: 18,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: blackColor), // Increased from 12
           ),
@@ -341,7 +344,7 @@ Widget _buildThermalTotalRow(String label, double amount,
         Text(
           label,
           style: TextStyle(
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.bold,
             fontSize: isBold
                 ? 20
                 : 16, // Larger for TOTAL, increased base from 12 to 14
@@ -351,7 +354,7 @@ Widget _buildThermalTotalRow(String label, double amount,
         Text(
           '₹${amount.toStringAsFixed(2)}',
           style: TextStyle(
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.bold,
             fontSize: isBold
                 ? 20
                 : 16, // Larger for TOTAL, increased base from 12 to 14

@@ -83,7 +83,7 @@ class OrderTabViewViewState extends State<OrderTabViewView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _loadInitialData();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_tabController.index == 0 && widget.orderAllKey != null) {
@@ -197,9 +197,10 @@ class OrderTabViewViewState extends State<OrderTabViewView>
 
   @override
   Widget build(BuildContext context) {
+    var size = MediaQuery.of(context).size;
     Widget mainContainer() {
       return DefaultTabController(
-        length: 3,
+        length: 2,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -232,30 +233,30 @@ class OrderTabViewViewState extends State<OrderTabViewView>
             ),
             Row(
               children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Text(
-                      'Select Table',
-                      style: MyTextStyle.f14(
-                        blackColor,
-                        weight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Text(
-                      'Select Waiter',
-                      style: MyTextStyle.f14(
-                        blackColor,
-                        weight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
+                // Expanded(
+                //   child: Padding(
+                //     padding: const EdgeInsets.all(10.0),
+                //     child: Text(
+                //       'Select Table',
+                //       style: MyTextStyle.f14(
+                //         blackColor,
+                //         weight: FontWeight.bold,
+                //       ),
+                //     ),
+                //   ),
+                // ),
+                // Expanded(
+                //   child: Padding(
+                //     padding: const EdgeInsets.all(10.0),
+                //     child: Text(
+                //       'Select Waiter',
+                //       style: MyTextStyle.f14(
+                //         blackColor,
+                //         weight: FontWeight.bold,
+                //       ),
+                //     ),
+                //   ),
+                // ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(10.0),
@@ -272,116 +273,117 @@ class OrderTabViewViewState extends State<OrderTabViewView>
             ),
             Row(
               children: [
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.all(10),
-                    child: DropdownButtonFormField<String>(
-                      value: (getTableModel.data?.any(
-                                (item) => item.name == selectedValue,
-                              ) ??
-                              false)
-                          ? selectedValue
-                          : null,
-                      icon: const Icon(
-                        Icons.arrow_drop_down,
-                        color: appPrimaryColor,
-                      ),
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: appPrimaryColor),
-                        ),
-                      ),
-                      items: getTableModel.data?.map((item) {
-                        return DropdownMenuItem<String>(
-                          value: item.name,
-                          child: Text(
-                            "Table ${item.name}",
-                            style: MyTextStyle.f14(
-                              blackColor,
-                              weight: FontWeight.normal,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            selectedValue = newValue;
-                            final selectedItem = getTableModel.data?.firstWhere(
-                              (item) => item.name == newValue,
-                            );
-                            tableId = selectedItem?.id.toString();
-                          });
-                          _onFilterChanged();
-                        }
-                      },
-                      hint: Text(
-                        '-- Select Table --',
-                        style: MyTextStyle.f14(
-                          blackColor,
-                          weight: FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.all(10),
-                    child: DropdownButtonFormField<String>(
-                      value: (getWaiterModel.data?.any(
-                                (item) => item.name == selectedValueWaiter,
-                              ) ??
-                              false)
-                          ? selectedValueWaiter
-                          : null,
-                      icon: const Icon(
-                        Icons.arrow_drop_down,
-                        color: appPrimaryColor,
-                      ),
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: appPrimaryColor),
-                        ),
-                      ),
-                      items: getWaiterModel.data?.map((item) {
-                        return DropdownMenuItem<String>(
-                          value: item.name,
-                          child: Text(
-                            "${item.name}",
-                            style: MyTextStyle.f14(
-                              blackColor,
-                              weight: FontWeight.normal,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            selectedValueWaiter = newValue;
-                            final selectedItem = getWaiterModel.data
-                                ?.firstWhere((item) => item.name == newValue);
-                            waiterId = selectedItem?.id.toString();
-                          });
-                          _onFilterChanged();
-                        }
-                      },
-                      hint: Text(
-                        '-- Select Waiter --',
-                        style: MyTextStyle.f14(
-                          blackColor,
-                          weight: FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
+                // Expanded(
+                //   child: Container(
+                //     margin: const EdgeInsets.all(10),
+                //     child: DropdownButtonFormField<String>(
+                //       value: (getTableModel.data?.any(
+                //                 (item) => item.name == selectedValue,
+                //               ) ??
+                //               false)
+                //           ? selectedValue
+                //           : null,
+                //       icon: const Icon(
+                //         Icons.arrow_drop_down,
+                //         color: appPrimaryColor,
+                //       ),
+                //       isExpanded: true,
+                //       decoration: InputDecoration(
+                //         border: OutlineInputBorder(
+                //           borderRadius: BorderRadius.circular(8),
+                //           borderSide: const BorderSide(color: appPrimaryColor),
+                //         ),
+                //       ),
+                //       items: getTableModel.data?.map((item) {
+                //         return DropdownMenuItem<String>(
+                //           value: item.name,
+                //           child: Text(
+                //             "Table ${item.name}",
+                //             style: MyTextStyle.f14(
+                //               blackColor,
+                //               weight: FontWeight.normal,
+                //             ),
+                //           ),
+                //         );
+                //       }).toList(),
+                //       onChanged: (String? newValue) {
+                //         if (newValue != null) {
+                //           setState(() {
+                //             selectedValue = newValue;
+                //             final selectedItem = getTableModel.data?.firstWhere(
+                //               (item) => item.name == newValue,
+                //             );
+                //             tableId = selectedItem?.id.toString();
+                //           });
+                //           _onFilterChanged();
+                //         }
+                //       },
+                //       hint: Text(
+                //         '-- Select Table --',
+                //         style: MyTextStyle.f14(
+                //           blackColor,
+                //           weight: FontWeight.normal,
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
+                // Expanded(
+                //   child: Container(
+                //     margin: const EdgeInsets.all(10),
+                //     child: DropdownButtonFormField<String>(
+                //       value: (getWaiterModel.data?.any(
+                //                 (item) => item.name == selectedValueWaiter,
+                //               ) ??
+                //               false)
+                //           ? selectedValueWaiter
+                //           : null,
+                //       icon: const Icon(
+                //         Icons.arrow_drop_down,
+                //         color: appPrimaryColor,
+                //       ),
+                //       isExpanded: true,
+                //       decoration: InputDecoration(
+                //         border: OutlineInputBorder(
+                //           borderRadius: BorderRadius.circular(8),
+                //           borderSide: const BorderSide(color: appPrimaryColor),
+                //         ),
+                //       ),
+                //       items: getWaiterModel.data?.map((item) {
+                //         return DropdownMenuItem<String>(
+                //           value: item.name,
+                //           child: Text(
+                //             "${item.name}",
+                //             style: MyTextStyle.f14(
+                //               blackColor,
+                //               weight: FontWeight.normal,
+                //             ),
+                //           ),
+                //         );
+                //       }).toList(),
+                //       onChanged: (String? newValue) {
+                //         if (newValue != null) {
+                //           setState(() {
+                //             selectedValueWaiter = newValue;
+                //             final selectedItem = getWaiterModel.data
+                //                 ?.firstWhere((item) => item.name == newValue);
+                //             waiterId = selectedItem?.id.toString();
+                //           });
+                //           _onFilterChanged();
+                //         }
+                //       },
+                //       hint: Text(
+                //         '-- Select Waiter --',
+                //         style: MyTextStyle.f14(
+                //           blackColor,
+                //           weight: FontWeight.normal,
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
+                SizedBox(
+                  width: size.width * 0.3,
                   child: Container(
                     margin: const EdgeInsets.all(10),
                     child: DropdownButtonFormField<String>(
@@ -447,7 +449,7 @@ class OrderTabViewViewState extends State<OrderTabViewView>
               tabs: const [
                 Tab(text: "All"),
                 Tab(text: "Line"),
-                Tab(text: "Parcel"),
+                //Tab(text: "Parcel"),
                 // Tab(text: "AC"),
                 // Tab(text: "HD"),
                 // Tab(text: "SWIGGY"),
@@ -477,16 +479,16 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                     sharedOrderData: getOrderListTodayModel,
                     isLoading: isLoadingOrders,
                   ),
-                  OrderViewView(
-                    key: _tabKeys[2],
-                    type: 'Parcel',
-                    selectedTableName: tableId,
-                    selectedWaiterName: waiterId,
-                    selectOperator: userId,
-                    operatorShared: operatorId,
-                    sharedOrderData: getOrderListTodayModel,
-                    isLoading: isLoadingOrders,
-                  ),
+                  // OrderViewView(
+                  //   key: _tabKeys[2],
+                  //   type: 'Parcel',
+                  //   selectedTableName: tableId,
+                  //   selectedWaiterName: waiterId,
+                  //   selectOperator: userId,
+                  //   operatorShared: operatorId,
+                  //   sharedOrderData: getOrderListTodayModel,
+                  //   isLoading: isLoadingOrders,
+                  // ),
                   // OrderViewView(
                   //   key: _tabKeys[3],
                   //   type: 'AC',
