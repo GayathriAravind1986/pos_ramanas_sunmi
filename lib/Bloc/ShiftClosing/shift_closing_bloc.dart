@@ -42,6 +42,8 @@ class SaveShiftClosing extends ShiftClosingEvent {
       this.differenceAmount);
 }
 
+class StockDetails extends ShiftClosingEvent {}
+
 class ShiftClosingBloc extends Bloc<ShiftClosingEvent, dynamic> {
   ShiftClosingBloc() : super(dynamic) {
     on<ShiftClosing>((event, emit) async {
@@ -70,6 +72,13 @@ class ShiftClosingBloc extends Bloc<ShiftClosingEvent, dynamic> {
               event.overallExpensesAmount,
               event.differenceAmount)
           .then((value) {
+        emit(value);
+      }).catchError((error) {
+        emit(error);
+      });
+    });
+    on<StockDetails>((event, emit) async {
+      await ApiProvider().getStockDetailsAPI().then((value) {
         emit(value);
       }).catchError((error) {
         emit(error);
