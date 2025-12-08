@@ -677,8 +677,8 @@ class OrderViewViewState extends State<OrderViewView> {
                                 ],
                               ),
 
-                              const SizedBox(height: 6),
-                              Text("Table: ${order.tableName ?? 'N/A'}"),
+                              // const SizedBox(height: 6),
+                              // Text("Table: ${order.tableName ?? 'N/A'}"),
                               const Spacer(),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,

@@ -6185,11 +6185,11 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                                   setState(() {
                                                                                     isCompleteOrder = true;
                                                                                   });
-                                                                                  if (selectedFullPaymentMethod.isEmpty || (selectedFullPaymentMethod != "Cash" && selectedFullPaymentMethod != "Card" && selectedFullPaymentMethod != "UPI")) {
-                                                                                    showToast("Select any one of the payment method", context, color: false);
-                                                                                    return;
-                                                                                  }
-                                                                                  //  if (selectedFullPaymentMethod == "Cash" || selectedFullPaymentMethod == "Card" || selectedFullPaymentMethod == "UPI") {
+                                                                                  // if (selectedFullPaymentMethod.isEmpty || (selectedFullPaymentMethod != "Cash" && selectedFullPaymentMethod != "Card" && selectedFullPaymentMethod != "UPI")) {
+                                                                                  //   showToast("Select any one of the payment method", context, color: false);
+                                                                                  //   return;
+                                                                                  // }
+                                                                                  //if (selectedFullPaymentMethod == "Cash" || selectedFullPaymentMethod == "Card" || selectedFullPaymentMethod == "UPI") {
                                                                                   List<Map<String, dynamic>> payments = [];
                                                                                   payments = [
                                                                                     {
@@ -6231,9 +6231,9 @@ class FoodOrderingScreenViewState extends State<FoodOrderingScreenView> {
                                                                                     });
                                                                                     context.read<FoodCategoryBloc>().add(UpdateOrder(jsonEncode(orderPayload), widget.existingOrder!.data!.id));
                                                                                   } else {
-                                                                                    // setState(() {
-                                                                                    //   completeLoad = true;
-                                                                                    // });
+                                                                                    setState(() {
+                                                                                      completeLoad = true;
+                                                                                    });
                                                                                     context.read<FoodCategoryBloc>().add(GenerateOrder(jsonEncode(orderPayload)));
                                                                                   }
                                                                                   //  }

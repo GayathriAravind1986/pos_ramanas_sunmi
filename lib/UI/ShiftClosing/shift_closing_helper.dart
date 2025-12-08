@@ -51,7 +51,7 @@ Widget getShiftClosingReceiptWidget({
                 Text(
                   address,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 18,
                     color: blackColor,
                     fontWeight: FontWeight.bold,
                   ),
@@ -60,7 +60,7 @@ Widget getShiftClosingReceiptWidget({
                 Text(
                   "Phone: $phone",
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 18,
                     color: blackColor,
                     fontWeight: FontWeight.bold,
                   ),
@@ -79,7 +79,7 @@ Widget getShiftClosingReceiptWidget({
               "SHIFT CLOSING REPORT",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
+                fontSize: 20,
                 color: blackColor,
               ),
             ),
@@ -100,14 +100,14 @@ Widget getShiftClosingReceiptWidget({
                 child: Text(
                   "S.No",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
               ),
               Expanded(
                 flex: 3,
                 child: Text(
                   "Payment Type",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
               ),
               Expanded(
@@ -115,7 +115,7 @@ Widget getShiftClosingReceiptWidget({
                 child: Text(
                   "Expected Amount",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
               ),
               Expanded(
@@ -123,16 +123,16 @@ Widget getShiftClosingReceiptWidget({
                 child: Text(
                   "Enter Amount",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
               ),
             ],
           ),
           Divider(thickness: 4, color: blackColor),
           _buildThermalItemRow(1, "UPI", "₹$expUPI", "₹$upi"),
-          _buildThermalItemRow(2, "CARD", "₹$expCard", "₹$card"),
-          _buildThermalItemRow(3, "HD", "₹$expHD", "₹$hd"),
-          _buildThermalItemRow(4, "CASH", "₹$expCash", "₹$cashInHand"),
+          // _buildThermalItemRow(2, "CARD", "₹$expCard", "₹$card"),
+          // _buildThermalItemRow(3, "HD", "₹$expHD", "₹$hd"),
+          _buildThermalItemRow(2, "CASH", "₹$expCash", "₹$cashInHand"),
           Divider(thickness: 4, color: blackColor),
           // _buildThermalTotalRow(
           //   "CashInHand",
@@ -183,7 +183,6 @@ Widget getShiftClosingReceiptWidget({
               ),
             ),
           ),
-          const SizedBox(height: 10),
           // const Center(
           //   child: Text(
           //     "Powered By",
@@ -204,6 +203,7 @@ Widget getShiftClosingReceiptWidget({
           //     ),
           //   ),
           // ),
+          const SizedBox(height: 40),
           //const SizedBox(height: 80), // Footer padding
         ],
       ),
@@ -227,7 +227,7 @@ Widget _buildThermalItemRow(
             '$sno',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 18,
               color: blackColor,
               fontWeight: FontWeight.bold,
             ),
@@ -238,7 +238,7 @@ Widget _buildThermalItemRow(
           child: Text(
             name,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 22,
               color: blackColor,
               fontWeight: FontWeight.bold,
             ),
@@ -250,7 +250,7 @@ Widget _buildThermalItemRow(
             expAmount,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 22,
               color: blackColor,
               fontWeight: FontWeight.bold,
             ),
@@ -262,7 +262,7 @@ Widget _buildThermalItemRow(
             amount,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 22,
               color: blackColor,
               fontWeight: FontWeight.bold,
             ),
@@ -283,14 +283,14 @@ Widget _buildThermalLabelRow(String label, String value) {
           label,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 16,
+            fontSize: 18,
             color: blackColor,
           ),
         ),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: blackColor,
           ),
