@@ -38,6 +38,7 @@ class ThermalShiftClosingDialog extends StatefulWidget {
 
 class _ThermalShiftClosingDialogState extends State<ThermalShiftClosingDialog> {
   final GlobalKey shiftKey = GlobalKey();
+  late SunmiPrinter sunmiPrinter;
   bool _isSunmiDevice = false;
 
   final TextEditingController ipLanController = TextEditingController();
