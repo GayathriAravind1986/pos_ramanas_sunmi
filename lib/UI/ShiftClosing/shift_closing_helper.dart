@@ -152,7 +152,7 @@ Widget getShiftClosingReceiptWidget({
           //   double.parse(totalExpenses),
           // ),
           _buildThermalTotalRow(
-            "NonCase+Expense",
+            "NonCash+Expense",
             isBold: true,
             double.parse(nonCashExpense),
           ),
